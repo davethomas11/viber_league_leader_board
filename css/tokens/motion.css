@@ -1,0 +1,45 @@
+:root{
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-punch:cubic-bezier(.2,1.6,.3,1);
+  --ease-slam:cubic-bezier(.2,1.4,.3,1);
+  --t-micro:.15s;
+  --t-reveal:.6s;
+  --t-door:.95s;
+  --t-stagger:.1s;
+  --t-stagger-deal:.09s;
+  --loop-ticker:22s;
+  --loop-sweep:3.2s;
+  --loop-pulse:1.2s;
+  --loop-drain:60s;
+}
+
+/* --- reveal recipes. Add the class to a section, then .in when it enters view. --- */
+@keyframes vl-rise{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:none}}
+@keyframes vl-deal{to{opacity:1;transform:none}}
+@keyframes vl-wipe{to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes vl-curtain{to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes vl-slam{
+  0%{opacity:0;transform:translate(-50%,-58%) scale(2.4) rotate(-14deg)}
+  60%{opacity:1;transform:translate(-50%,-58%) scale(.92) rotate(2deg)}
+  100%{opacity:1;transform:translate(-50%,-58%) scale(1) rotate(0)}
+}
+@keyframes vl-punch{
+  0%{opacity:0;transform:scale(.5) rotate(-8deg)}
+  55%{opacity:1;transform:scale(1.18) rotate(3deg)}
+  100%{opacity:1;transform:none}
+}
+@keyframes vl-stamp{
+  0%{opacity:0;transform:rotate(-20deg) scale(3)}
+  70%{opacity:1;transform:rotate(-4deg) scale(.92)}
+  100%{opacity:1;transform:rotate(var(--rotate-stamp)) scale(1)}
+}
+@keyframes vl-ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes vl-tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes vl-pulse{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes vl-sweep{0%{left:-30%}60%,100%{left:130%}}
+@keyframes vl-drain{from{stroke-dashoffset:326}to{stroke-dashoffset:0}}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  [data-reveal],[data-reveal] *{opacity:1!important;transform:none!important;clip-path:none!important}
+}

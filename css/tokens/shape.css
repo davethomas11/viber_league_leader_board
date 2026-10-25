@@ -1,0 +1,37 @@
+:root{
+  /* the skew is the signature */
+  --skew:-8deg;
+  --skew-counter:8deg;
+  --skew-type:-4deg;
+  --rotate-stamp:-6deg;
+
+  /* hard shadows only */
+  --shadow-hard:6px 6px 0;
+  --shadow-hard-hover:9px 9px 0;
+  --shadow-hard-lg:12px 12px 0;
+
+  /* rules and borders */
+  --rule:3px;
+  --border-hair:1px;
+  --border-loud:2px;
+  --border-stamp:3px;
+
+  /* square corners everywhere except circles */
+  --radius:0;
+
+  /* spacing — 2px grid gaps, generous section padding */
+  --gap-grid:2px;
+  --space-1:6px;
+  --space-2:10px;
+  --space-3:16px;
+  --space-4:22px;
+  --space-5:34px;
+  --space-6:44px;
+  --space-7:56px;
+  --space-8:70px;
+  --space-9:110px;
+  --pad-page:40px;
+  --pad-card:16px;
+  --pad-panel:40px;
+  --pad-section:100px;
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vibers League · Official Live Leaderboard &amp; Season Standings</title>
+<meta name="description" content="Live leaderboard and fighter telemetry for Vibers League: the competitive league for AI creators. Polled live from the official Vancouver scorecards.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vibers League">
+<meta property="og:title" content="Vibers League · Official Live Leaderboard">
+<meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Follow the live season standings, wins, People's Choice crowns, and fighter dossiers.">
+<meta property="og:image" content="assets/og-card-v2.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg">
+
+<!-- Preload self-hosted Vibers League brand fonts -->
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/anton-400-latin-v1.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/barlow-400-latin-v1.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/barlow-condensed-700-latin-v1.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/barlow-condensed-800-italic-latin-v1.woff2">
+
+<!-- Vibers League Design System Tokens & Leaderboard Styles -->
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/leaderboard.css">
+</head>
+<body>
+
+<!-- Sticky Live Broadcast Ticker -->
+<div class="ticker-wrap">
+  <div class="ticker-bar">
+    <div class="ticker-progress"></div>
+    <div class="ticker-inner" id="live-ticker-content">
+      LIVE STANDINGS FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
+    </div>
+  </div>
+</div>
+
+<!-- Official Vibers League Top Navigation -->
+<header class="topbar">
+  <a class="brand" href="https://www.vibersleague.com/" aria-label="Vibers League Home">
+    <span data-mark data-drain></span> VIBERS LEAGUE
+  </a>
+  <nav class="navlinks site-nav" aria-label="Primary Navigation">
+    <a href="https://www.vibersleague.com/">Home</a>
+    <a href="https://www.vibersleague.com/episodes/">Episodes</a>
+    <a href="#standings" aria-current="page">Leaderboard</a>
+    <a href="#dossiers">Dossiers</a>
+    <a href="#scoring">Scoring</a>
+    <a href="https://www.vibersleague.com/apply/">Apply</a>
+  </nav>
+  <div class="topbar-right">
+    <a class="flag" href="https://docs.google.com/spreadsheets/d/17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk/edit?pli=1" target="_blank" rel="noopener" title="Open live Google Sheet data source">
+      <span class="vl-live-dot"></span> LIVE SHEET FEED ↗
+    </a>
+  </div>
+</header>
+
+<!-- Broadcast Hero + Real-Time Polling Telemetry HUD -->
+<section class="lb-hero">
+  <canvas class="lb-hero-fx" aria-hidden="true"></canvas>
+  <div class="lb-hero-mark" data-mark data-enter aria-hidden="true"></div>
+
+  <div class="lb-hero-grid">
+    <div class="lb-hero-copy">
+      <div class="lb-kicker-row">
+        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED</span></span>
+        <span class="vl-kicker">SEASON 01 · VANCOUVER, BC</span>
+      </div>
+      <h1>
+        <span class="l1">The Points</span>
+        <span class="l2">On The</span>
+        <span class="l3">Board.</span>
+      </h1>
+      <p class="lb-hero-sub">
+        Every night a viber fights on the 60-minute clock, <strong>3 scorecards worth 30 points</strong> go on the line: the whale, the shark, and the room. Automatically polled from the official ringside sheet.
+      </p>
+    </div>
+
+    <!-- Live Polling Engine Telemetry HUD -->
+    <aside class="telemetry-hud" aria-label="Live Google Sheet Polling Telemetry">
+      <div class="hud-top">
+        <div class="hud-status" id="hud-status">
+          <span class="hud-pulse"></span>
+          <span id="hud-status-text">LIVE · FEED LOCKED</span>
+        </div>
+        <div class="hud-countdown">
+          <small>NEXT POLL</small><span id="hud-countdown-val">10.0s</span>
+        </div>
+      </div>
+
+      <div class="hud-bar-track" aria-hidden="true">
+        <div class="hud-bar-fill" id="hud-bar-fill"></div>
+      </div>
+
+      <div class="hud-meta-grid">
+        <div class="hud-stat is-acid">
+          <div class="hud-stat-k">ROSTER LOCKED</div>
+          <div class="hud-stat-v" id="hud-roster-count">10 VIBERS</div>
+        </div>
+        <div class="hud-stat">
+          <div class="hud-stat-k">SYNC CYCLES</div>
+          <div class="hud-stat-v" id="hud-sync-count">#01</div>
+        </div>
+        <div class="hud-stat is-blood">
+          <div class="hud-stat-k">LAST UPDATED</div>
+          <div class="hud-stat-v" id="hud-last-time">--:--:--</div>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <div class="hud-intervals" role="group" aria-label="Polling Interval">
+          <span>CADENCE:</span>
+          <button type="button" class="hud-chip" data-poll-ms="5000"><i>5S</i></button>
+          <button type="button" class="hud-chip active" data-poll-ms="10000"><i>10S</i></button>
+          <button type="button" class="hud-chip" data-poll-ms="30000"><i>30S</i></button>
+        </div>
+        <div class="hud-actions">
+          <button type="button" class="hud-btn hud-btn-ghost" id="btn-toggle-poll"><span>PAUSE</span></button>
+          <button type="button" class="hud-btn" id="btn-sync-now"><span>SYNC NOW ↻</span></button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- League Aggregate KPI Strip -->
+<section class="kpi-strip" id="kpi-strip" aria-label="Season Aggregate Metrics"></section>
+
+<main class="shell">
+  <div class="season-wrap">
+
+    <!-- Section 1: Top 3 Podium / Fight Card Leaders -->
+    <section id="podium" data-spot>
+      <div class="season-head">
+        <h2>Top of the <em>card.</em></h2>
+        <div class="rule"></div>
+        <div class="vl-meta">PODIUM LEADERS · CLICK ANY FIGHTER FOR DOSSIER</div>
+      </div>
+      <div class="podium-grid" id="podium-container" data-spot></div>
+    </section>
+
+    <!-- Section 2: Interactive Live Points Table -->
+    <section class="season-sec" id="standings">
+      <div class="season-head">
+        <h2>The points <em>table.</em></h2>
+        <div class="rule"></div>
+        <div class="vl-meta">UP TO 12 PTS PER VIBER A NIGHT · CLICK ANY ROW TO EXPAND</div>
+      </div>
+
+      <!-- Filter & Search Controls -->
+      <div class="lb-toolbar">
+        <div class="lb-filters" role="tablist" aria-label="Filter Vibers">
+          <button type="button" class="filter-btn active" data-filter="all">
+            <span>ALL VIBERS <em class="filter-count" data-filter-count="all"></em></span>
+          </button>
+          <button type="button" class="filter-btn" data-filter="active">
+            <span>ON THE BOARD <em class="filter-count" data-filter-count="active"></em></span>
+          </button>
+          <button type="button" class="filter-btn" data-filter="winners">
+            <span>NIGHT WINNERS <em class="filter-count" data-filter-count="winners"></em></span>
+          </button>
+          <button type="button" class="filter-btn" data-filter="peoples_choice">
+            <span>PEOPLE'S CHOICE ★ <em class="filter-count" data-filter-count="peoples_choice"></em></span>
+          </button>
+          <button type="button" class="filter-btn" data-filter="standby">
+            <span>STANDBY POOL <em class="filter-count" data-filter-count="standby"></em></span>
+          </button>
+        </div>
+
+        <div class="lb-search-wrap">
+          <input type="search" id="lb-search" class="lb-search" placeholder="Search viber, @handle, city, AI stack, or move..." aria-label="Search leaderboard">
+        </div>
+      </div>
+
+      <!-- Standings Table -->
+      <div class="lb-table-wrap">
+        <table class="pts-live" aria-label="Vibers League Standings">
+          <thead>
+            <tr>
+              <th class="sortable is-sorted" data-sort="rank"># <i class="sort-arrow">▲</i></th>
+              <th class="sortable" data-sort="name">Viber <i class="sort-arrow"></i></th>
+              <th>Builds With</th>
+              <th class="num sortable" data-sort="episodes">Nights <i class="sort-arrow"></i></th>
+              <th class="num sortable" data-sort="wins">Wins <i class="sort-arrow"></i></th>
+              <th class="num sortable" data-sort="peoples_choice">Crowd ★ <i class="sort-arrow"></i></th>
+              <th class="center sortable" data-sort="yellow_cards" title="Yellow Cards (-1 pt)">YC <i class="sort-arrow"></i></th>
+              <th class="num sortable" data-sort="best_night">Best / Last <i class="sort-arrow"></i></th>
+              <th class="num sortable" data-sort="points">Points <i class="sort-arrow"></i></th>
+            </tr>
+          </thead>
+          <tbody id="lb-tbody"></tbody>
+        </table>
+      </div>
+
+      <p class="fine-note">
+        Points carry over from every night a viber fights: up to 8 from the 2 judges (the whale and the shark) and up to 4 from the crowd card, less any yellow card. Any tie on a night goes to the viber the whale ranked higher. Click any row to inspect the builder's signature move, scouting report, and favourite build.
+      </p>
+    </section>
+
+    <!-- Section 3: How Scoring Works (3 Scorecards Breakdown) -->
+    <section class="season-sec" id="scoring">
+      <div class="season-head">
+        <h2>How the call is <em>made.</em></h2>
+        <div class="rule"></div>
+        <div class="vl-meta">3 SCORECARDS · 30 POINTS IN THE ROOM</div>
+      </div>
+
+      <div class="cards">
+        <div class="card" style="--i:0">
+          <div class="card-h">01 · The Whale<span>10 PTS</span></div>
+          <p style="font-size:15px;line-height:1.55;color:var(--paper-75);margin-top:10px">
+            <strong style="color:var(--paper)">The business owner</strong> who brought the real problem to the room. Ranks all 4 builds from first (4 pts) to fourth (1 pt) and breaks any tie on the final call.
+          </p>
+          <div style="margin-top:16px;font-family:var(--font-label);font-weight:800;font-style:italic;letter-spacing:.2em;font-size:12px;color:var(--acid)">
+            1ST: 4 PTS · 2ND: 3 PTS · 3RD: 2 PTS · 4TH: 1 PT
+          </div>
+        </div>
+
+        <div class="card" style="--i:1">
+          <div class="card-h">02 · The Shark<span>10 PTS</span></div>
+          <p style="font-size:15px;line-height:1.55;color:var(--paper-75);margin-top:10px">
+            <strong style="color:var(--paper)">The domain &amp; technical expert.</strong> Drives every build live on stage during the 20-minute demos, testing whether the software holds up under real hands.
+          </p>
+          <div style="margin-top:16px;font-family:var(--font-label);font-weight:800;font-style:italic;letter-spacing:.2em;font-size:12px;color:var(--acid)">
+            1ST: 4 PTS · 2ND: 3 PTS · 3RD: 2 PTS · 4TH: 1 PT
+          </div>
+        </div>
+
+        <div class="card" style="--i:2">
+          <div class="card-h">03 · The Crowd<span>10 PTS</span></div>
+          <p style="font-size:15px;line-height:1.55;color:var(--paper-75);margin-top:10px">
+            <strong style="color:var(--paper)">Every guest in the Vancouver room</strong> gets 1 vote after the demos. Ranked on the same 4–3–2–1 scale. The top crowd share also claims <strong style="color:var(--blood)">People's Choice ★</strong>.
+          </p>
+          <div style="margin-top:16px;font-family:var(--font-label);font-weight:800;font-style:italic;letter-spacing:.2em;font-size:12px;color:var(--blood)">
+            MAX 12 PTS PER VIBER · YELLOW CARD = −1 PT
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Full Viber Dossier Cards Grid -->
+    <section class="season-sec" id="dossiers">
+      <div class="season-head">
+        <h2>The fighter <em>dossiers.</em></h2>
+        <div class="rule"></div>
+        <div class="vl-meta">EVERY NAMED VIBER · SIGNATURES, STACKS &amp; FAVOURITE BUILDS</div>
+      </div>
+      <div class="roster-grid" id="roster-cards-grid"></div>
+
+      <div class="season-cta" style="margin-top:44px">
+        <a class="vl-btn vl-btn-primary" href="https://www.vibersleague.com/apply/?as=viber"><span>Apply to compete →</span></a>
+        <a class="vl-btn vl-btn-acid" href="https://docs.google.com/spreadsheets/d/17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk/edit?pli=1" target="_blank" rel="noopener"><span>Inspect Live Google Sheet ↗</span></a>
+        <a class="vl-btn vl-btn-ghost" href="https://www.vibersleague.com/rules/"><span>Read the official rules</span></a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Fighter Spotlight Modal -->
+<div class="vl-modal-backdrop" id="fighter-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Viber Dossier">
+  <div class="vl-modal">
+    <button type="button" class="vl-modal-close" data-close-modal aria-label="Close modal">ESC · CLOSE ✕</button>
+    <div id="fighter-modal-body"></div>
+  </div>
+</div>
+
+<!-- Official Vibers League Footer -->
+<footer class="site-foot">
+  <div class="shell">
+    <div class="foot-row">
+      <div class="foot-brand">
+        <div class="brand"><span data-mark></span> VIBERS LEAGUE</div>
+        <div class="foot-tag">The competitive league for AI creators</div>
+      </div>
+      <div class="vl-meta">
+        LIVE LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
+        &copy; 2026 VIBERS LEAGUE &middot; BUILT LIVE ON THE CLOCK
+        <div class="foot-links">
+          <a href="https://www.vibersleague.com/">Home</a>
+          <a href="https://www.vibersleague.com/episodes/">Episodes</a>
+          <a href="https://www.vibersleague.com/vibers/">Vibers</a>
+          <a href="https://www.vibersleague.com/apply/">Apply</a>
+          <a href="https://www.vibersleague.com/rules/">Rules</a>
+          <a href="https://docs.google.com/spreadsheets/d/17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk/edit?pli=1" target="_blank" rel="noopener">Data Source (Google Sheet)</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="js/kit.js"></script>
+<script src="js/leaderboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+:root{
+  /* base palette — five colours, nothing outside them */
+  --ink:#0b0a08;      /* default background, warm near-black */
+  --paper:#f3efe6;    /* default text, neutral corner, off-white */
+  --acid:#e8ff2a;     /* primary accent: rules, labels, the winner */
+  --blood:#ff2b2b;    /* secondary accent: urgency, live, red corner, CTAs */
+  --steel:#1a1916;    /* raised surfaces: cards, form panels, strips */
+
+  /* paper on ink, by role */
+  --paper-100:#f3efe6;
+  --paper-90:rgba(243,239,230,.9);
+  --paper-75:rgba(243,239,230,.75);
+  --paper-70:rgba(243,239,230,.72);
+  --paper-40:rgba(243,239,230,.4);
+  --paper-15:rgba(243,239,230,.15);
+  --paper-10:rgba(243,239,230,.1);
+
+  /* ink on paper, by role */
+  --ink-75:rgba(11,10,8,.75);
+  --ink-20:rgba(11,10,8,.2);
+
+  /* semantic aliases */
+  --bg:var(--ink);
+  --bg-raised:var(--steel);
+  --bg-invert:var(--paper);
+  --text:var(--paper);
+  --text-body:var(--paper-70);
+  --text-meta:var(--paper-40);
+  --text-invert:var(--ink);
+  --accent:var(--acid);
+  --accent-urgent:var(--blood);
+  --live:var(--blood);
+  --winner:var(--acid);
+
+  /* lines */
+  --line:rgba(243,239,230,.12);
+  --line-quiet:rgba(243,239,230,.1);
+  --line-loud:var(--acid);
+
+  /* atmosphere only — never a fill */
+  --haze-blood:rgba(255,43,43,.14);
+  --haze-acid:rgba(232,255,42,.07);
+  --spot-acid:rgba(232,255,42,.16);
+  --spot-blood:rgba(255,43,43,.16);
+  --scanline:rgba(255,255,255,.012);
+}

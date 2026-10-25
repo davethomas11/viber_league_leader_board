@@ -1,0 +1,39 @@
+:root{
+  --font-display:'Anton','Anton Fallback','Anton Fallback 2','Anton Fallback 3',sans-serif;
+  --font-label:'Barlow Condensed','Barlow Condensed Fallback','Barlow Condensed Fallback 2',sans-serif;
+  --font-body:'Barlow','Barlow Fallback',sans-serif;
+
+  /* display sizes — fluid, huge, left aligned */
+  --size-hero:clamp(64px,12.5vw,190px);
+  --size-h2:clamp(40px,6vw,84px);
+  --size-h3:clamp(38px,4.5vw,64px);
+  --size-numeral:76px;
+  --size-name:20px;
+  --size-wordmark:22px;
+
+  /* label + body sizes */
+  --size-kicker:14px;
+  --size-label:13px;
+  --size-label-sm:12px;
+  --size-body-lg:17px;
+  --size-body:15.5px;
+  --size-body-sm:12.5px;
+
+  /* tracking */
+  --track-display:.005em;
+  --track-wordmark:.05em;
+  --track-label:.2em;
+  --track-kicker:.35em;
+  --track-btn:.08em;
+  --track-stamp:.15em;
+
+  /* leading */
+  --lh-hero:.88;
+  --lh-display:.9;
+  --lh-h2:.95;
+  --lh-body:1.6;
+  --lh-body-tight:1.55;
+
+  --weight-label:700;
+  --weight-label-loud:800;
+}

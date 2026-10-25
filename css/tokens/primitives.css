@@ -1,0 +1,64 @@
+/* Utility primitives lifted from the reference implementation. The React
+   components in components/ are the preferred API; these exist for static
+   HTML, email, stream overlays, and anywhere React is not available. */
+
+.vl-display{font-family:var(--font-display);text-transform:uppercase;line-height:var(--lh-display);letter-spacing:var(--track-display)}
+.vl-outline{color:transparent;-webkit-text-stroke:2px var(--paper)}
+.vl-acid-italic{color:var(--acid);font-style:italic;transform:skewX(var(--skew-type));display:inline-block}
+.vl-kicker{font-family:var(--font-label);font-weight:var(--weight-label);letter-spacing:var(--track-kicker);font-size:var(--size-kicker);color:var(--blood);text-transform:uppercase}
+.vl-label{font-family:var(--font-label);font-weight:var(--weight-label-loud);font-style:italic;letter-spacing:var(--track-label);font-size:var(--size-label);color:var(--acid);text-transform:uppercase}
+.vl-meta{font-family:var(--font-label);font-weight:var(--weight-label);letter-spacing:.25em;font-size:var(--size-label-sm);color:var(--paper-40);line-height:2}
+.vl-mono-num{font-variant-numeric:tabular-nums}
+
+.vl-btn{
+  font-family:var(--font-label);font-weight:var(--weight-label-loud);font-style:italic;
+  font-size:19px;letter-spacing:var(--track-btn);text-transform:uppercase;
+  padding:16px 34px;border:none;cursor:pointer;display:inline-block;text-decoration:none;
+  transform:skewX(var(--skew));transition:transform var(--t-micro),box-shadow var(--t-micro);
+}
+.vl-btn>span{display:inline-block;transform:skewX(var(--skew-counter))}
+.vl-btn-primary{background:var(--blood);color:var(--paper);box-shadow:var(--shadow-hard) var(--acid)}
+.vl-btn-primary:hover{transform:skewX(var(--skew)) translate(-2px,-2px);box-shadow:var(--shadow-hard-hover) var(--acid)}
+.vl-btn-ghost{background:transparent;color:var(--paper);border:var(--border-loud) solid var(--paper)}
+.vl-btn-ghost:hover{background:var(--paper);color:var(--ink)}
+.vl-btn-acid{background:var(--acid);color:var(--ink);box-shadow:var(--shadow-hard) var(--blood)}
+.vl-btn-acid:hover{transform:skewX(var(--skew)) translate(-2px,-2px);box-shadow:var(--shadow-hard-hover) var(--blood)}
+.vl-btn-ink{background:var(--ink);color:var(--acid);box-shadow:var(--shadow-hard) rgba(11,10,8,.35)}
+.vl-btn-sm{font-size:15px;padding:11px 22px}
+
+.vl-pill{background:var(--blood);color:var(--paper);font-family:var(--font-label);font-weight:var(--weight-label-loud);font-style:italic;letter-spacing:var(--track-label);font-size:var(--size-label);padding:4px 12px;display:inline-block}
+.vl-pill-acid{background:var(--acid);color:var(--ink)}
+.vl-pill-skew{transform:skewX(var(--skew))}
+.vl-pill-skew>span{display:inline-block;transform:skewX(var(--skew-counter))}
+
+.vl-stamp{display:inline-block;border:var(--border-stamp) solid var(--blood);color:var(--blood);font-family:var(--font-display);font-size:22px;letter-spacing:var(--track-stamp);padding:10px 22px;transform:rotate(var(--rotate-stamp))}
+.vl-ghost{font-family:var(--font-display);font-style:italic;opacity:.09;pointer-events:none;white-space:nowrap;position:absolute}
+.vl-rule{height:var(--rule);background:var(--acid)}
+.vl-scanlines::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent 0 3px,var(--scanline) 3px 4px)}
+.vl-panel{background:var(--steel);border:var(--border-hair) solid var(--paper-15);padding:var(--pad-panel)}
+.vl-panel-shadow{box-shadow:var(--shadow-hard-lg) var(--acid)}
+.vl-grid-2px{display:grid;gap:var(--gap-grid);background:var(--line)}
+.vl-live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blood);animation:vl-pulse var(--loop-pulse) infinite}
+
+.vl-field label{display:block;font-family:var(--font-label);font-weight:var(--weight-label);letter-spacing:var(--track-label);font-size:var(--size-label-sm);color:var(--acid);margin-bottom:8px;text-transform:uppercase}
+.vl-field input,.vl-field textarea,.vl-field select{
+  width:100%;background:var(--ink);border:var(--border-hair) solid rgba(243,239,230,.2);
+  color:var(--paper);font-family:var(--font-body);font-size:15px;padding:14px 16px;outline:none;
+  transition:border-color var(--t-micro);
+}
+.vl-field input:focus,.vl-field textarea:focus,.vl-field select:focus{border-color:var(--acid)}
+.vl-field .hint{font-size:var(--size-body-sm);color:var(--paper-40);margin-top:6px}
+
+/* Clock V mark — paste assets/logo-clock-v.svg contents with class="vl" */
+.vl{display:inline-block;vertical-align:middle;overflow:visible}
+.vl .face{fill:none;stroke:rgba(243,239,230,.28);stroke-width:2}
+.vl .ticks{stroke:var(--paper-40);stroke-width:2}
+.vl .hand{stroke:var(--paper);stroke-width:12;stroke-linecap:square;transform-origin:60px 60px;transform:rotate(-28deg)}
+.vl .hand.b{stroke:var(--acid);transform:rotate(28deg)}
+.vl .arc{fill:none;stroke:var(--blood);stroke-width:4;stroke-dasharray:326;stroke-dashoffset:0;transform:rotate(-90deg);transform-origin:60px 60px}
+.vl .dot{fill:var(--blood)}
+.vl-enter .hand.a{transform:rotate(-180deg);animation:vlHandA .9s var(--ease-out) .2s forwards}
+.vl-enter .hand.b{transform:rotate(180deg);animation:vlHandB .9s var(--ease-out) .2s forwards}
+@keyframes vlHandA{to{transform:rotate(-28deg)}}
+@keyframes vlHandB{to{transform:rotate(28deg)}}
+.vl-drain .arc{stroke-dashoffset:326;animation:vl-drain var(--loop-drain) linear 1.1s infinite}
