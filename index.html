@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vibers League · V2.0 Live Leaderboard &amp; Fight-Night Telemetry</title>
-<meta name="description" content="V2.0 Live leaderboard, Tale of the Tape head-to-head arena, 5-axis combat radar, and Google Sheets polling telemetry for Vibers League.">
+<title>Vibers League · V3.0 Kinetic Leaderboard &amp; Fight-Night Telemetry</title>
+<meta name="description" content="V3.0 Live leaderboard with FLIP position-swap animations, directional rank arrows, championship coronation overlays, Tale of the Tape, and Google Sheets polling telemetry.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Vibers League">
-<meta property="og:title" content="Vibers League · V2.0 Official Live Leaderboard">
-<meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Live season standings, Tale of the Tape, and fighter dossiers.">
+<meta property="og:title" content="Vibers League · V3.0 Official Live Leaderboard">
+<meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Live season standings, kinetic rank-shift animations, Tale of the Tape, and fighter dossiers.">
 <meta property="og:image" content="assets/og-card-v2.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.svg">
@@ -31,16 +31,16 @@
   <div class="ticker-bar">
     <div class="ticker-progress"></div>
     <div class="ticker-inner" id="live-ticker-content">
-      V2.0 LIVE STANDINGS FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
+      V3.0 LIVE KINETIC FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
     </div>
   </div>
 </div>
 
-<!-- Official Vibers League Top Navigation + V2 Broadcast Controls -->
+<!-- Official Vibers League Top Navigation + V3 Broadcast Controls -->
 <header class="topbar">
   <a class="brand" href="https://www.vibersleague.com/" aria-label="Vibers League Home">
     <span data-mark data-drain></span> VIBERS LEAGUE
-    <span class="v2-badge" title="V2.0 Overdrive Broadcast Edition"><span>V2.0</span></span>
+    <span class="v2-badge" title="V3.0 Kinetic Overtake Broadcast Edition"><span>V3.0</span></span>
   </a>
   <nav class="navlinks site-nav" aria-label="Primary Navigation">
     <a href="#podium">Podium</a>
@@ -48,14 +48,17 @@
     <a href="#versus">Tale of the Tape ⚔</a>
     <a href="#dossiers">Dossiers</a>
     <a href="#scoring">Rules &amp; Call</a>
-    <a href="https://www.vibersleague.com/" target="_blank" rel="noopener">Main Site ↗</a>
+    <a href="?simulate_ranking_change=1" title="Reload with URL query ?simulate_ranking_change=1">Demo Link ↗</a>
   </nav>
   <div class="topbar-right">
+    <button type="button" class="v2-ctl-btn is-active" id="btn-dave-overtake" title="Trigger choreographed 'DAVE TAKES THE LEAD' FLIP position-swap animation (?simulate_ranking_change=1)">
+      <span>👑 DAVE TAKES THE LEAD</span>
+    </button>
     <button type="button" class="v2-ctl-btn" id="btn-sound-fx" title="Toggle Web Audio Ringside Bell &amp; Telemetry Sound FX">
       <span>🔕 BELL FX: OFF</span>
     </button>
-    <button type="button" class="v2-ctl-btn" id="btn-sim-mode" title="Simulate live ringside judge scorecards coming in to test real-time rank shifts">
-      <span>⚡ SIMULATE FIGHT NIGHT</span>
+    <button type="button" class="v2-ctl-btn" id="btn-sim-mode" title="Simulate continuous random ringside scorecard calls">
+      <span>⚡ RANDOM SIM</span>
     </button>
     <button type="button" class="v2-ctl-btn" id="btn-tv-mode" title="Toggle Fullscreen Jumbotron TV Mode">
       <span>📺 JUMBOTRON</span>
@@ -71,7 +74,7 @@
   <div class="lb-hero-grid">
     <div class="lb-hero-copy">
       <div class="lb-kicker-row">
-        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED · V2.0</span></span>
+        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED · V3.0</span></span>
         <span class="vl-kicker">SEASON 01 · VANCOUVER, BC</span>
       </div>
       <h1>
@@ -133,7 +136,7 @@
         </div>
       </div>
 
-      <!-- V2 Live Ringside Event Feed Log -->
+      <!-- Live Ringside Event Feed Log -->
       <div class="hud-feed-log" id="hud-feed-log" aria-live="polite"></div>
     </aside>
   </div>
@@ -160,7 +163,7 @@
       <div class="season-head">
         <h2>The points <em>table.</em></h2>
         <div class="rule"></div>
-        <div class="vl-meta">UP TO 12 PTS PER VIBER A NIGHT · CLICK ANY ROW TO EXPAND</div>
+        <div class="vl-meta">UP TO 12 PTS PER VIBER A NIGHT · KINETIC FLIP RANKING</div>
       </div>
 
       <!-- Filter & Search Controls -->
@@ -188,7 +191,7 @@
         </div>
       </div>
 
-      <!-- V2 Interactive AI Stack Filter Bar -->
+      <!-- Interactive AI Stack Filter Bar -->
       <div class="stack-cloud-bar" id="stack-cloud-bar" aria-label="Filter by AI Tool Stack"></div>
 
       <!-- Standings Table -->
@@ -212,11 +215,11 @@
       </div>
 
       <p class="fine-note">
-        Points carry over from every night a viber fights: up to 8 from the 2 judges (the whale and the shark) and up to 4 from the crowd card, less any yellow card. Any tie on a night goes to the viber the whale ranked higher. Hit <strong>⚡ SIMULATE FIGHT NIGHT</strong> in the top bar to preview live scorecard calls and rank-shift animations.
+        Points carry over from every night a viber fights: up to 8 from the 2 judges (the whale and the shark) and up to 4 from the crowd card, less any yellow card. Open <a href="?simulate_ranking_change=1"><code>?simulate_ranking_change=1</code></a> or click <strong>👑 DAVE TAKES THE LEAD</strong> in the top bar to watch the live FLIP position overtake and championship coronation!
       </p>
     </section>
 
-    <!-- Section 3 (V2 NEW): Tale of the Tape — Head-to-Head Matchup Arena -->
+    <!-- Section 3: Tale of the Tape — Head-to-Head Matchup Arena -->
     <section class="season-sec" id="versus">
       <div class="season-head">
         <h2>Tale of the <em>tape.</em></h2>
@@ -314,6 +317,13 @@
   </div>
 </div>
 
+<!-- V3 Full-Screen "DAVE TAKES THE LEAD" Championship Coronation Splash -->
+<div class="lead-takeover-overlay" id="lead-takeover-overlay" aria-hidden="true">
+  <div class="lead-takeover-backdrop"></div>
+  <canvas class="lead-takeover-confetti" id="lead-takeover-confetti"></canvas>
+  <div class="lead-takeover-card" id="lead-takeover-body"></div>
+</div>
+
 <!-- Ringside Bell Toast Notification -->
 <div class="bell-toast" id="bell-toast" role="status" aria-live="polite">
   <div class="bell-toast-inner">
@@ -330,11 +340,11 @@
   <div class="shell">
     <div class="foot-row">
       <div class="foot-brand">
-        <div class="brand"><span data-mark></span> VIBERS LEAGUE <span class="v2-badge" style="font-size:11px;padding:2px 7px;margin-left:6px"><span>V2.0</span></span></div>
+        <div class="brand"><span data-mark></span> VIBERS LEAGUE <span class="v2-badge" style="font-size:11px;padding:2px 7px;margin-left:6px"><span>V3.0</span></span></div>
         <div class="foot-tag">The competitive league for AI creators</div>
       </div>
       <div class="vl-meta">
-        V2.0 LIVE LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
+        V3.0 KINETIC LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
         &copy; 2026 VIBERS LEAGUE &middot; BUILT LIVE ON THE CLOCK
         <div class="foot-links">
           <a href="https://www.vibersleague.com/">Home</a>

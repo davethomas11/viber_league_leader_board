@@ -1,7 +1,8 @@
 /* ==========================================================================
-   VIBERS LEAGUE V2 OVERDRIVE — LIVE LEADERBOARD, TELEMETRY, TALE OF THE TAPE,
-   5-AXIS RADAR CHARTS, RINGSIDE SOUND FX & LIVE NIGHT SIMULATOR
-   Data Source: Google Sheets (17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk)
+   VIBERS LEAGUE V3.0 KINETIC OVERTAKE EDITION —
+   FLIP ROW SWAP ANIMATIONS, DIRECTIONAL ARROWS, CHAMPIONSHIP CORONATION
+   ("DAVE TAKES THE LEAD" ON ?simulate_ranking_change=1), TALE OF THE TAPE,
+   5-AXIS RADAR CHARTS, RINGSIDE SOUND FX & LIVE GOOGLE SHEET POLLING
    ========================================================================== */
 (function () {
   'use strict';
@@ -30,6 +31,8 @@
     previousMap: {},
     changedIds: {},
     rankDeltaMap: {},
+    pointsDeltaMap: {},
+    coronatedId: null,
     filter: 'all',
     toolFilter: '',
     search: '',
@@ -43,6 +46,7 @@
     isPaused: false,
     isSyncing: false,
     isSimulating: false,
+    choreographyRunning: false,
     soundEnabled: false,
     tvMode: false,
     syncCount: 0,
@@ -51,7 +55,7 @@
     feedLog: []
   };
 
-  // ---------- Web Audio API Synthesizer (Ringside Bell & Telemetry Beeps) ----------
+  // ---------- Web Audio API Synthesizer (Ringside Bell, Fanfare & Telemetry Beeps) ----------
   var audioCtx = null;
   function ensureAudio() {
     if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
@@ -63,13 +67,12 @@
     }
   }
 
-  function playRingsideBell() {
-    if (!state.soundEnabled) return;
+  function playRingsideBell(force) {
+    if (!state.soundEnabled && !force) return;
     try {
       ensureAudio();
       if (!audioCtx) return;
       var now = audioCtx.currentTime;
-      // Metallic fight-bell partials
       var freqs = [587.33, 1174.66, 1760, 2489.02];
       freqs.forEach(function (f, idx) {
         var osc = audioCtx.createOscillator();
@@ -119,7 +122,90 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () {
       toast.classList.remove('is-visible');
-    }, 4200);
+    }, 4500);
+  }
+
+  // ---------- Full-Screen Championship Coronation ("DAVE TAKES THE LEAD") ----------
+  var takeoverTimer = 0;
+  function triggerLeadTakeoverSplash(viber, ptGain, oldRank) {
+    var overlay = document.getElementById('lead-takeover-overlay');
+    var cardBody = document.getElementById('lead-takeover-body');
+    var canvas = document.getElementById('lead-takeover-confetti');
+    if (!overlay || !cardBody || !viber) return;
+
+    var firstName = viber.name.split(' ')[0].toUpperCase();
+    cardBody.innerHTML =
+      '<div class="lead-takeover-inner">' +
+        '<div class="lead-takeover-shot">' +
+          renderShot(viber, { win: true }) +
+        '</div>' +
+        '<div>' +
+          '<div class="lead-takeover-kicker">★ NEW #1 LEADER ON THE CARD · UP FROM #' + pad(oldRank || 3) + ' ★</div>' +
+          '<div class="lead-takeover-headline">' +
+            esc(firstName) + ' TAKES' +
+            '<em>THE LEAD!</em>' +
+          '</div>' +
+          '<div class="lead-takeover-sub">' +
+            '<b>' + fmtPts(viber.points) + ' PTS</b>' +
+            '<span>' + (ptGain > 0 ? '+' + fmtPts(ptGain) + ' PT NIGHT CALL · ' : '') + viber.wins + ' WINS · ' + esc(viber.city) + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    overlay.classList.add('is-active');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // Burst acid/blood confetti sparks on the takeover canvas
+    if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var ctx = canvas.getContext('2d');
+      var w = canvas.width = window.innerWidth;
+      var h = canvas.height = window.innerHeight;
+      var particles = [];
+      for (var i = 0; i < 95; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var speed = 4 + Math.random() * 14;
+        particles.push({
+          x: w / 2,
+          y: h / 2,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3,
+          w: 6 + Math.random() * 10,
+          h: 4 + Math.random() * 6,
+          rot: Math.random() * Math.PI,
+          vrot: (Math.random() - 0.5) * 0.25,
+          color: i % 3 === 0 ? '#ff2b2b' : (i % 5 === 0 ? '#f3efe6' : '#e8ff2a')
+        });
+      }
+      var start = performance.now();
+      function drawBurst(now) {
+        if (now - start > 2600) {
+          ctx.clearRect(0, 0, w, h);
+          return;
+        }
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(function (p) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.28; // gravity
+          p.vx *= 0.985;
+          p.rot += p.vrot;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+        requestAnimationFrame(drawBurst);
+      }
+      requestAnimationFrame(drawBurst);
+    }
+
+    clearTimeout(takeoverTimer);
+    takeoverTimer = setTimeout(function () {
+      overlay.classList.remove('is-active');
+      overlay.setAttribute('aria-hidden', 'true');
+    }, 2650);
   }
 
   // ---------- Live Event Feed Log ----------
@@ -195,7 +281,6 @@
   }
 
   // 5-Axis Combat Radar Polygon SVG Generator
-  // Axes: 1. Dominance (Points), 2. Clutch (Wins), 3. Ceiling (Best Night), 4. Crowd Pull (People's Choice), 5. Discipline (Clean Record + Consistency)
   function buildRadarSvg(v1, v2) {
     var size = 240;
     var cx = size / 2;
@@ -378,11 +463,63 @@
     return { sig: String(text.length), rows: items };
   }
 
-  // ---------- Apply Incoming Data & Diff ----------
-  function applyNormalizedData(normalized, sourceTag) {
+  // ---------- FLIP Row Position Measurement & Physical Slide Animation ----------
+  function captureRowPositions() {
+    var positions = {};
+    document.querySelectorAll('#lb-tbody tr.lb-row[data-viber-id]').forEach(function (tr) {
+      var id = tr.getAttribute('data-viber-id');
+      positions[id] = tr.getBoundingClientRect().top;
+    });
+    return positions;
+  }
+
+  function playFlipRowAnimation(prevTops, deltas) {
+    if (!prevTops || Object.keys(prevTops).length === 0) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var rows = document.querySelectorAll('#lb-tbody tr.lb-row[data-viber-id]');
+    rows.forEach(function (tr) {
+      var id = tr.getAttribute('data-viber-id');
+      var oldTop = prevTops[id];
+      if (oldTop === undefined) return;
+      var newTop = tr.getBoundingClientRect().top;
+      var dy = oldTop - newTop;
+      if (Math.abs(dy) < 2) return;
+
+      var rankDelta = (deltas && deltas[id]) || 0;
+      var movingUp = dy > 0; // New position is higher on page (smaller top)
+
+      // 1. Invert: snap to old position immediately
+      tr.style.transition = 'none';
+      tr.style.transform = 'translateY(' + dy + 'px)' + (movingUp ? ' scale(1.025)' : ' scale(0.99)');
+      tr.classList.add(movingUp ? 'is-overtaking-up' : 'is-overtaking-down');
+
+      // Force browser layout reflow
+      void tr.offsetHeight;
+
+      // 2. Play: glide smoothly to new rank position
+      tr.style.transition = 'transform 1.05s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 1.05s ease';
+      tr.style.transform = 'translateY(0) scale(1)';
+
+      setTimeout(function () {
+        tr.style.transition = '';
+        tr.style.transform = '';
+        tr.classList.remove('is-overtaking-up', 'is-overtaking-down');
+      }, 1150);
+    });
+  }
+
+  // ---------- Apply Incoming Data, Diff Ranks, Animate FLIP & Coronation ----------
+  function applyNormalizedData(normalized, sourceTag, opts) {
+    opts = opts || {};
+    var prevTops = captureRowPositions();
     var newChanged = {};
     var hasChanges = false;
     var deltas = {};
+    var ptDeltas = {};
+    var previousLeaderId = state.vibers.length ? state.vibers[0].id : null;
+    var newLeaderCoronated = null;
+    var oldRankOfNewLeader = 1;
 
     if (Object.keys(state.previousMap).length > 0) {
       normalized.forEach(function (v) {
@@ -392,7 +529,10 @@
           hasChanges = true;
         } else {
           if (prev.rank !== v.rank) {
-            deltas[v.id] = prev.rank - v.rank; // positive = moved up
+            deltas[v.id] = prev.rank - v.rank; // positive = climbed up
+          }
+          if (prev.points !== v.points) {
+            ptDeltas[v.id] = v.points - prev.points;
           }
           if (prev.points !== v.points ||
               prev.rank !== v.rank ||
@@ -404,8 +544,13 @@
             hasChanges = true;
             var ptDiff = v.points - prev.points;
             var msg = v.name + (ptDiff > 0 ? ' +' + fmtPts(ptDiff) + ' PTS' : ' UPDATED') + ' → RANK #' + pad(v.rank) + ' (' + fmtPts(v.points) + ' PTS)';
-            pushFeedLog(sourceTag || 'CALL', msg, sourceTag === 'SIM');
+            pushFeedLog(sourceTag || 'CALL', msg, sourceTag === 'SIM' || sourceTag === 'OVERTAKE');
             showBellToast(v.name.toUpperCase() + ' ON THE BOARD!', msg);
+
+            if (v.rank === 1 && prev.rank > 1) {
+              newLeaderCoronated = v;
+              oldRankOfNewLeader = prev.rank;
+            }
           }
         }
       });
@@ -422,24 +567,99 @@
     if (Object.keys(deltas).length > 0) {
       state.rankDeltaMap = deltas;
     }
+    if (Object.keys(ptDeltas).length > 0) {
+      state.pointsDeltaMap = ptDeltas;
+    }
+    if (newLeaderCoronated) {
+      state.coronatedId = newLeaderCoronated.id;
+    }
 
     if (hasChanges) {
-      if (state.syncCount > 1 || sourceTag === 'SIM') {
-        playRingsideBell();
+      if (state.syncCount > 1 || sourceTag === 'SIM' || sourceTag === 'OVERTAKE') {
+        playRingsideBell(opts.forceBell);
       }
       renderAll();
+      playFlipRowAnimation(prevTops, deltas);
+
+      if (newLeaderCoronated && (opts.showTakeoverSplash || sourceTag === 'OVERTAKE' || sourceTag === 'SIM')) {
+        triggerLeadTakeoverSplash(
+          newLeaderCoronated,
+          ptDeltas[newLeaderCoronated.id] || 0,
+          oldRankOfNewLeader
+        );
+      }
+
       if (Object.keys(newChanged).length > 0) {
         setTimeout(function () {
           state.changedIds = {};
-        }, 2200);
+        }, 3200);
       }
     }
   }
 
+  // ---------- Choreographed "DAVE TAKES THE LEAD" Sequence (?simulate_ranking_change=1) ----------
+  function runDaveTakesTheLeadChoreography(realRowsInput) {
+    if (state.choreographyRunning) return;
+    state.choreographyRunning = true;
+
+    var baseList = (realRowsInput && realRowsInput.length ? realRowsInput : (state.rawSheetRows.length ? state.rawSheetRows : FALLBACK_VIBERS)).map(function (r) {
+      return Object.assign({}, r);
+    });
+
+    // Stage 1 ("BEFORE NIGHT 3 CALL"):
+    // Put Dave Thomas at 20 pts (2 episodes, 1 win) so he sits at #3 behind Ollie (27 pts, #1) and Zachary/Raphael (22 pts, #2)
+    var preCallRows = baseList.map(function (r) {
+      var copy = Object.assign({}, r);
+      if (String(copy.id).trim() === 'v011' || /dave/i.test(copy.name)) {
+        copy.points = 20;
+        copy.episodes = 2;
+        copy.wins = 1;
+        copy.peoples_choice = 0;
+        copy.best_night = 11;
+        copy.last_night = 9;
+      }
+      return copy;
+    });
+
+    var preNormalized = normalizeRows(preCallRows);
+    state.rankDeltaMap = {};
+    state.pointsDeltaMap = {};
+    state.coronatedId = null;
+    state.vibers = preNormalized;
+    state.previousMap = {};
+    preNormalized.forEach(function (v) { state.previousMap[v.id] = v; });
+
+    renderAll();
+    updateHudStatus('NIGHT 03 · THE CALL INCOMING...', 'is-syncing');
+    pushFeedLog('CALL', 'NIGHT 03 SCORECARDS SEALED · OLLIE LEADS AT 27 PTS, DAVE #03 AT 20 PTS', true);
+    showBellToast('NIGHT 03 · THE CALL IS IN!', 'READING WHALE, SHARK & CROWD SCORECARDS...');
+
+    // Scroll smoothly so both the Podium & Standings Table are visible for the overtake
+    var standingsEl = document.getElementById('standings');
+    if (standingsEl && window.scrollY < 120) {
+      setTimeout(function () {
+        standingsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    }
+
+    // Stage 2 (1.6 seconds later): The Call drops! Dave scores an 11-point clean sweep (+11 pts -> 31 pts)
+    // and rockets from #3 past Zachary, Raphael, and Ollie to take #1 on the board!
+    setTimeout(function () {
+      var finalNormalized = normalizeRows(baseList);
+      updateHudStatus('★ DAVE TAKES THE LEAD! ★', '');
+      applyNormalizedData(finalNormalized, 'OVERTAKE', {
+        showTakeoverSplash: true,
+        forceBell: false
+      });
+      state.choreographyRunning = false;
+    }, 1750);
+  }
+
   // ---------- Live Polling System ----------
-  function fetchSheetData() {
-    if (state.isSyncing) return Promise.resolve();
-    if (state.isSimulating) {
+  function fetchSheetData(opts) {
+    opts = opts || {};
+    if (state.isSyncing || state.choreographyRunning) return Promise.resolve();
+    if (state.isSimulating && !opts.initialBoot) {
       simulateFightNightCall();
       return Promise.resolve();
     }
@@ -478,7 +698,12 @@
 
         updateHudStatus(state.isPaused ? 'POLLING PAUSED' : 'LIVE · FEED LOCKED', '');
         updateTelemetryStats();
-        applyNormalizedData(normalized, 'LIVE');
+
+        if (opts.runChoreographyOnLoad) {
+          runDaveTakesTheLeadChoreography(result.rows);
+        } else {
+          applyNormalizedData(normalized, 'LIVE');
+        }
       })
       .catch(function (err) {
         console.warn('Live sheet poll error:', err);
@@ -486,34 +711,35 @@
         state.nextSyncAt = performance.now() + state.pollIntervalMs;
         updateHudStatus('RETRYING FEED...', 'is-error');
         pushFeedLog('WARN', 'NETWORK HICCUP · RETRYING NEXT CYCLE', false);
-        if (!state.vibers.length) {
+        if (opts.runChoreographyOnLoad) {
+          runDaveTakesTheLeadChoreography(FALLBACK_VIBERS);
+        } else if (!state.vibers.length) {
           state.vibers = normalizeRows(FALLBACK_VIBERS);
           renderAll();
         }
       });
   }
 
-  // ---------- Live Fight-Night Simulator (Demo Mode for Stakeholders) ----------
+  // ---------- Live Fight-Night Simulator ----------
   function simulateFightNightCall() {
-    if (!state.vibers.length) return;
+    if (!state.vibers.length || state.choreographyRunning) return;
     var cloned = state.vibers.map(function (v) { return Object.assign({}, v); });
-    // Pick a random contender to receive a fresh judge/crowd scorecard call
     var idx = Math.floor(Math.random() * cloned.length);
     var target = cloned[idx];
-    var addedPts = [3, 4, 6, 8, 9, 11][Math.floor(Math.random() * 6)];
+    var addedPts = [4, 6, 8, 10, 11, 12][Math.floor(Math.random() * 6)];
     target.points += addedPts;
     target.episodes += 1;
     target.last_night = addedPts;
     if (addedPts > target.best_night) target.best_night = addedPts;
     if (addedPts >= 9) target.wins += 1;
-    if (addedPts === 11 || addedPts === 8) target.peoples_choice += 1;
+    if (addedPts >= 11) target.peoples_choice += 1;
 
     state.syncCount++;
     state.lastSyncTime = new Date();
     state.nextSyncAt = performance.now() + state.pollIntervalMs;
     updateTelemetryStats();
     var normalized = normalizeRows(cloned);
-    applyNormalizedData(normalized, 'SIM');
+    applyNormalizedData(normalized, 'SIM', { showTakeoverSplash: true });
   }
 
   function updateHudStatus(text, modClass) {
@@ -541,7 +767,7 @@
     var barEl = document.getElementById('hud-bar-fill');
 
     function tick(now) {
-      if (!state.isPaused && !document.hidden) {
+      if (!state.isPaused && !document.hidden && !state.choreographyRunning) {
         var remaining = Math.max(0, state.nextSyncAt - now);
         var secs = (remaining / 1000).toFixed(1);
         if (countEl) countEl.textContent = secs + 's';
@@ -560,7 +786,7 @@
     requestAnimationFrame(tick);
 
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden && !state.isPaused) {
+      if (!document.hidden && !state.isPaused && !state.choreographyRunning) {
         fetchSheetData();
       }
     });
@@ -577,7 +803,7 @@
       return '#' + (idx + 1) + ' ' + esc(v.name.toUpperCase()) + ' <b>' + fmtPts(v.points) + ' PTS</b>';
     }).join('<span class="sep">★</span>');
 
-    var unit = 'V2.0 LIVE BROADCAST FEED <span class="sep">★</span> CURRENT LEADER: <b>' + esc(leader.name.toUpperCase()) + ' (' + fmtPts(leader.points) + ' PTS)</b>' +
+    var unit = 'V3.0 LIVE KINETIC FEED <span class="sep">★</span> CURRENT LEADER: <b>' + esc(leader.name.toUpperCase()) + ' (' + fmtPts(leader.points) + ' PTS)</b>' +
       '<span class="sep">★</span>' + topThree +
       '<span class="sep">★</span>' + activeCount + ' RANKED VIBERS · ' + fmtPts(totalPts) + ' TOTAL LEAGUE POINTS ON THE BOARD' +
       '<span class="sep">★</span> 60:00 ON THE CLOCK · VANCOUVER, BC <span class="sep">★</span> ';
@@ -594,13 +820,14 @@
     var activeCount = v.filter(function (x) { return !x.isStandby; }).length;
     var standbyCount = v.length - activeCount;
     var leader = v[0];
+    var leaderDelta = state.rankDeltaMap[leader.id] || 0;
 
     var kpiEl = document.getElementById('kpi-strip');
     if (!kpiEl) return;
 
     kpiEl.innerHTML =
       '<div class="kpi-cell">' +
-        '<div class="kpi-label">01 · CURRENT LEADER</div>' +
+        '<div class="kpi-label">01 · CURRENT LEADER ' + (leaderDelta > 0 ? '<span class="rank-arrow-badge is-up" style="margin-left:6px;font-size:10px;padding:2px 6px"><i>▲ +' + leaderDelta + '</i></span>' : '') + '</div>' +
         '<div class="kpi-val"><em>' + esc(leader.name.split(' ')[0]) + '</em></div>' +
         '<div class="kpi-sub">' + fmtPts(leader.points) + ' PTS · ' + leader.wins + ' WINS · ' + esc(leader.city) + '</div>' +
       '</div>' +
@@ -670,11 +897,20 @@
 
     top3.forEach(function (v, idx) {
       var isFirst = idx === 0;
+      var delta = state.rankDeltaMap[v.id] || 0;
+      var ptDelta = state.pointsDeltaMap[v.id] || 0;
+      var isCoronated = isFirst && state.coronatedId === v.id;
+
       var cornerPills = '';
       if (isFirst) {
-        cornerPills += '<span class="vl-pill vl-pill-acid vl-pill-skew"><span>#1 LEADER</span></span>';
+        cornerPills += '<span class="vl-pill vl-pill-acid vl-pill-skew"><span>' + (isCoronated ? '👑 NEW #1 LEADER' : '#1 LEADER') + '</span></span>';
       } else {
         cornerPills += '<span class="vl-pill vl-pill-skew"><span>RANK #' + (idx + 1) + '</span></span>';
+      }
+      if (delta > 0) {
+        cornerPills += '<span class="rank-arrow-badge is-up"><i>▲ UP ' + delta + '</i></span>';
+      } else if (delta < 0) {
+        cornerPills += '<span class="rank-arrow-badge is-down"><i>▼ DOWN ' + Math.abs(delta) + '</i></span>';
       }
       if (v.wins > 0) {
         cornerPills += '<span class="vl-pill vl-pill-skew" style="background:var(--ink);color:var(--acid);border:1px solid var(--acid)"><span>' + v.wins + (v.wins === 1 ? ' WIN' : ' WINS') + '</span></span>';
@@ -688,13 +924,15 @@
       }).join('');
 
       html +=
-        '<article class="podium-card rank-' + (idx + 1) + '" style="--i:' + idx + '" data-open-modal="' + esc(v.id) + '">' +
+        '<article class="podium-card rank-' + (idx + 1) + (isCoronated ? ' is-coronated' : '') + '" style="--i:' + idx + '" data-open-modal="' + esc(v.id) + '">' +
           '<div class="podium-visual">' +
             renderShot(v, { win: isFirst }) +
             '<div class="podium-corner-tag">' + cornerPills + '</div>' +
             '<span class="podium-rank-num">' + pad(idx + 1) + '</span>' +
             '<div class="podium-pts-overlay">' +
-              '<div class="podium-pts-big">' + fmtPts(v.points) + '<small>PTS</small></div>' +
+              '<div class="podium-pts-big">' + fmtPts(v.points) + '<small>PTS</small>' +
+                (ptDelta > 0 ? ' <span class="pts-delta-pill" style="vertical-align:middle;margin-left:6px"><i>+' + fmtPts(ptDelta) + '</i></span>' : '') +
+              '</div>' +
               '<span class="vl-label">' + v.episodes + (v.episodes === 1 ? ' NIGHT' : ' NIGHTS') + '</span>' +
             '</div>' +
           '</div>' +
@@ -859,6 +1097,8 @@
       var isExpanded = !!state.expandedIds[v.id];
       var isChanged = !!state.changedIds[v.id];
       var delta = state.rankDeltaMap[v.id] || 0;
+      var ptDelta = state.pointsDeltaMap[v.id] || 0;
+      var isNewLeader = isFirst && state.coronatedId === v.id;
       var pct = Math.max(2, Math.round((v.points / maxPts) * 100));
 
       var rowCls = 'lb-row' +
@@ -867,13 +1107,17 @@
         (v.rank === 3 ? ' rank-3' : '') +
         (v.isStandby ? ' is-standby' : '') +
         (isExpanded ? ' is-expanded' : '') +
-        (isChanged ? ' just-updated' : '');
+        (isNewLeader ? ' is-new-leader' : (isChanged ? ' just-updated' : ''));
 
-      var deltaHtml = '';
-      if (delta > 0) deltaHtml = '<span class="rank-delta up">▲' + delta + '</span>';
-      else if (delta < 0) deltaHtml = '<span class="rank-delta down">▼' + Math.abs(delta) + '</span>';
+      var arrowHtml = '';
+      if (delta > 0) {
+        arrowHtml = '<span class="rank-arrow-badge is-up" title="Moved up ' + delta + (delta === 1 ? ' place' : ' places') + '"><i>▲ +' + delta + '</i></span>';
+      } else if (delta < 0) {
+        arrowHtml = '<span class="rank-arrow-badge is-down" title="Moved down ' + Math.abs(delta) + (Math.abs(delta) === 1 ? ' place' : ' places') + '"><i>▼ −' + Math.abs(delta) + '</i></span>';
+      }
 
       var badges = '';
+      if (isNewLeader) badges += '<span class="leader-crown-badge"><i>👑 TAKES THE LEAD</i></span>';
       if (v.wins > 0) badges += '<span class="mini-tag win-tag"><i>' + v.wins + 'W</i></span>';
       if (v.peoples_choice > 0) badges += '<span class="mini-tag pc-tag"><i>★ PC</i></span>';
       if (v.isStandby) badges += '<span class="mini-tag standby-tag"><i>STANDBY</i></span>';
@@ -883,8 +1127,8 @@
       }).join(' ');
 
       html +=
-        '<tr class="' + rowCls + '" data-toggle-row="' + esc(v.id) + '">' +
-          '<td class="rank-cell">' + pad(v.rank) + deltaHtml + '</td>' +
+        '<tr class="' + rowCls + '" data-viber-id="' + esc(v.id) + '" data-toggle-row="' + esc(v.id) + '">' +
+          '<td class="rank-cell"><div class="rank-cell-inner"><span>' + pad(v.rank) + '</span>' + arrowHtml + '</div></td>' +
           '<td>' +
             '<div class="who-cell">' +
               renderShot(v, { round: true, decor: true, win: isFirst }) +
@@ -909,6 +1153,7 @@
           '<td class="num">' + fmtPts(v.best_night) + ' <span style="color:var(--paper-40);font-size:12px">/ ' + fmtPts(v.last_night) + '</span></td>' +
           '<td class="num">' +
             '<div class="pts-cell-wrap">' +
+              (ptDelta > 0 ? '<span class="pts-delta-pill"><i>+' + fmtPts(ptDelta) + ' PTS</i></span>' : '') +
               '<div class="pts-bar-outer"><div class="pts-bar-inner" style="width:' + (v.points > 0 ? pct : 0) + '%"></div></div>' +
               '<span class="pts-val">' + fmtPts(v.points) + '</span>' +
             '</div>' +
@@ -967,6 +1212,7 @@
     var html = '';
     state.vibers.forEach(function (v) {
       var isFirst = v.rank === 1;
+      var delta = state.rankDeltaMap[v.id] || 0;
       var toolsHtml = v.tools.map(function (t) {
         return '<span class="stack-pill"><i>' + esc(t) + '</i></span>';
       }).join('');
@@ -983,6 +1229,7 @@
               '<h3 class="f-name">' + esc(v.name) + '</h3>' +
               '<div class="f-handle">' + esc(v.handle) + ' · ID ' + esc(v.id.toUpperCase()) + '</div>' +
               '<div class="f-pts"><b>' + fmtPts(v.points) + '</b><span>PTS</span>' +
+                (delta > 0 ? '<span class="rank-arrow-badge is-up" style="margin-left:6px;font-size:10px;padding:2px 5px"><i>▲+' + delta + '</i></span>' : '') +
                 (v.wins > 0 ? '<span style="color:var(--acid);margin-left:6px">· ' + v.wins + 'W</span>' : '') +
                 (v.peoples_choice > 0 ? '<span style="color:var(--blood);margin-left:4px">· ★ PC</span>' : '') +
               '</div>' +
@@ -1212,7 +1459,14 @@
       });
     }
 
-    // V2 Controls: Sound FX Toggle, Fight Night Simulator Toggle, TV Broadcast Mode
+    // V3 Replay "DAVE TAKES THE LEAD" Button
+    var daveOvertakeBtn = document.getElementById('btn-dave-overtake');
+    if (daveOvertakeBtn) {
+      daveOvertakeBtn.addEventListener('click', function () {
+        runDaveTakesTheLeadChoreography();
+      });
+    }
+
     var soundBtn = document.getElementById('btn-sound-fx');
     if (soundBtn) {
       soundBtn.addEventListener('click', function () {
@@ -1220,7 +1474,7 @@
         soundBtn.classList.toggle('is-active', state.soundEnabled);
         soundBtn.innerHTML = '<span>' + (state.soundEnabled ? '🔔 BELL FX: ON' : '🔕 BELL FX: OFF') + '</span>';
         if (state.soundEnabled) {
-          playRingsideBell();
+          playRingsideBell(true);
           showBellToast('RINGSIDE AUDIO ARMED', 'BELL CHIMES ON EVERY LIVE SCORECARD CALL');
         }
       });
@@ -1231,13 +1485,15 @@
       simBtn.addEventListener('click', function () {
         state.isSimulating = !state.isSimulating;
         simBtn.classList.toggle('is-blood-active', state.isSimulating);
-        simBtn.innerHTML = '<span>' + (state.isSimulating ? '⚡ SIMULATING NIGHT (STOP)' : '⚡ SIMULATE FIGHT NIGHT') + '</span>';
+        simBtn.innerHTML = '<span>' + (state.isSimulating ? '⚡ SIMULATING (STOP)' : '⚡ RANDOM SIM') + '</span>';
         if (state.isSimulating) {
           updateHudStatus('SIMULATION OVERDRIVE', 'is-syncing');
           pushFeedLog('SIM', 'FIGHT-NIGHT SIMULATOR ENGAGED · FIRING CALL', true);
           simulateFightNightCall();
         } else {
           state.rankDeltaMap = {};
+          state.pointsDeltaMap = {};
+          state.coronatedId = null;
           updateHudStatus('RESTORING G-SHEET...', 'is-syncing');
           pushFeedLog('SYNC', 'SIMULATOR OFF · RESTORING OFFICIAL GOOGLE SHEET', false);
           fetchSheetData();
@@ -1259,7 +1515,6 @@
       });
     }
 
-    // Versus dropdowns
     var selL = document.getElementById('vs-select-left');
     var selR = document.getElementById('vs-select-right');
     if (selL) {
@@ -1275,7 +1530,6 @@
       });
     }
 
-    // Delegated clicks
     document.addEventListener('click', function (e) {
       var toolFilterBtn = e.target.closest('[data-tool-filter]');
       if (toolFilterBtn) {
@@ -1330,14 +1584,18 @@
 
   // ---------- Boot ----------
   function init() {
+    var params = new URLSearchParams(window.location.search);
+    var autoSimulateOvertake = params.get('simulate_ranking_change') === '1' || params.get('simulate_ranking_change') === 'true';
+
+    state.rawSheetRows = FALLBACK_VIBERS;
     state.vibers = normalizeRows(FALLBACK_VIBERS);
     state.vibers.forEach(function (v) { state.previousMap[v.id] = v; });
-    pushFeedLog('BOOT', 'V2.0 TELEMETRY ENGINE INITIALIZED', false);
+    pushFeedLog('BOOT', 'V3.0 KINETIC OVERTAKE ENGINE INITIALIZED', false);
     renderAll();
 
     bindEvents();
     initHeroCanvas();
-    fetchSheetData();
+    fetchSheetData({ initialBoot: true, runChoreographyOnLoad: autoSimulateOvertake });
     startPollingLoop();
   }
 
