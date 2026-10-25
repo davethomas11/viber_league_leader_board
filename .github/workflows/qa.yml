@@ -1,0 +1,23 @@
+name: Vibers League QA & Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  qa-and-unit-tests:
+    name: Ringside QA & Unit Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Unit & QA Regression Suite
+        run: npm test
