@@ -2172,4 +2172,495 @@ table.pts-live tbody tr.lb-row.is-new-leader {
   }
 }
 
+/* ==========================================================================
+   V4.0 TWIST CARD EDITION — MINUTE 30:00 "THE VIBER CARD"
+   1. Opens from any row (name/photo/row) & closes back to the exact table spot
+      with focus restoration.
+   2. Large photo (or identical square initials card for no-photo vibers),
+      name, handle, city, builds_with, signature_move, known_for, favourite_build.
+   3. Full 7-stat line underneath:
+      Points · Nights · Wins · People's Choice · Yellow Cards · Best Night · Last Night
+   4. Own URL hash address (#viber-dave-thomas / #v011) + Share Link + Print View
+   ========================================================================== */
+
+.viber-card-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  background: rgba(11, 10, 8, 0.88);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s var(--ease-out);
+  overflow-y: auto;
+}
+.viber-card-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.viber-card-modal {
+  width: 100%;
+  max-width: 960px;
+  background: var(--steel);
+  border: 3px solid var(--acid);
+  box-shadow: 14px 14px 0 var(--blood), 0 30px 80px rgba(0, 0, 0, 0.9);
+  position: relative;
+  transform: translateY(32px) scale(0.96);
+  transition: transform 0.32s var(--ease-punch);
+  overflow: hidden;
+  margin: auto;
+}
+.viber-card-backdrop.is-open .viber-card-modal {
+  transform: translateY(0) scale(1);
+}
+.viber-card-modal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, var(--scanline) 3px 4px);
+}
+.viber-card-modal > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Top Bar inside The Viber Card */
+.vc-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--ink);
+  border-bottom: 2px solid var(--acid);
+  flex-wrap: wrap;
+}
+.vc-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.vc-twist-tag {
+  background: var(--blood);
+  color: var(--paper);
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: .22em;
+  padding: 4px 10px;
+  transform: skewX(var(--skew));
+  text-transform: uppercase;
+}
+.vc-twist-tag > span {
+  display: inline-block;
+  transform: skewX(var(--skew-counter));
+}
+.vc-address-pill {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .14em;
+  color: var(--paper-70);
+  background: var(--steel);
+  border: 1px solid var(--paper-15);
+  padding: 4px 10px;
+}
+.vc-address-pill code {
+  color: var(--acid);
+  font-family: inherit;
+}
+
+.vc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vc-btn {
+  background: var(--steel);
+  color: var(--paper);
+  border: 1px solid var(--paper-40);
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  cursor: pointer;
+  transform: skewX(var(--skew));
+  transition: all var(--t-micro);
+}
+.vc-btn > span {
+  display: inline-block;
+  transform: skewX(var(--skew-counter));
+}
+.vc-btn:hover {
+  border-color: var(--acid);
+  background: var(--acid);
+  color: var(--ink);
+}
+.vc-btn.is-copied {
+  background: var(--acid);
+  color: var(--ink);
+  border-color: var(--acid);
+}
+.vc-btn-close {
+  background: var(--blood);
+  color: var(--paper);
+  border-color: var(--blood);
+  box-shadow: 3px 3px 0 var(--acid);
+}
+.vc-btn-close:hover {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+
+/* Main Upper Grid: Large Photo Left + Dossier Right */
+.vc-main {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  border-bottom: 3px solid var(--acid);
+}
+.vc-photo-col {
+  position: relative;
+  background: var(--ink);
+  border-right: 2px solid var(--line);
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.vc-photo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--steel);
+  flex: 1;
+}
+.vc-photo-frame .vl-shot {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.vc-photo-frame .vl-shot .ini {
+  font-size: clamp(88px, 12vw, 148px);
+}
+.vc-rank-stamp {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  background: var(--ink);
+  border: 2px solid var(--acid);
+  color: var(--acid);
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  padding: 6px 12px;
+  box-shadow: 4px 4px 0 var(--blood);
+}
+.vc-status-stamp {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Right Column: Identity & 4 Story Fields */
+.vc-info-col {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  background:
+    radial-gradient(ellipse 55% 50% at 95% 10%, var(--haze-blood), transparent 70%),
+    var(--steel);
+}
+.vc-header-block {
+  border-bottom: 1px solid var(--paper-15);
+  padding-bottom: 16px;
+}
+.vc-city-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: .24em;
+  color: var(--blood);
+  text-transform: uppercase;
+}
+.vc-name {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.5vw, 58px);
+  line-height: 0.92;
+  text-transform: uppercase;
+  color: var(--paper);
+  letter-spacing: .02em;
+  margin-top: 6px;
+}
+.vc-name.is-leader {
+  color: var(--acid);
+}
+.vc-handle {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .18em;
+  color: var(--paper-70);
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.vc-story-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+}
+.vc-field {
+  background: rgba(11, 10, 8, 0.55);
+  border-left: 3px solid var(--acid);
+  padding: 12px 16px;
+}
+.vc-field.is-blood {
+  border-left-color: var(--blood);
+}
+.vc-field.is-full {
+  grid-column: 1 / -1;
+}
+.vc-field-k {
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: .22em;
+  color: var(--acid);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.vc-field.is-blood .vc-field-k {
+  color: var(--blood);
+}
+.vc-field-v {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--paper);
+}
+.vc-field-v.is-quote {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--paper);
+}
+
+/* Under That: The Full 7-Stat Line
+   (points, nights, wins, People's Choice, yellow cards, best night, last night) */
+.vc-full-line-wrap {
+  background: var(--ink);
+  padding: 20px 28px 24px;
+}
+.vc-full-line-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.vc-full-line-title {
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: .24em;
+  color: var(--acid);
+  text-transform: uppercase;
+}
+.vc-full-line-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--gap-grid);
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.vc-stat-cell {
+  background: var(--steel);
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.vc-stat-cell.is-pts {
+  background: rgba(232, 255, 42, 0.08);
+  border-top: 3px solid var(--acid);
+}
+.vc-stat-k {
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: .16em;
+  color: var(--paper-70);
+  text-transform: uppercase;
+}
+.vc-stat-v {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1;
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+.vc-stat-cell.is-pts .vc-stat-v {
+  color: var(--acid);
+}
+.vc-stat-v.is-acid {
+  color: var(--acid);
+}
+.vc-stat-v.is-blood {
+  color: var(--blood);
+}
+
+/* Prev / Next Viber Card Footer Navigation */
+.vc-footer-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--steel);
+  border-top: 1px solid var(--paper-15);
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .16em;
+  color: var(--paper-40);
+  text-transform: uppercase;
+}
+
+/* Active Row Highlight when Returning from Card */
+@keyframes vl-return-spot {
+  0% {
+    outline: 3px solid var(--acid);
+    background: rgba(232, 255, 42, 0.28);
+  }
+  100% {
+    outline: 0 solid transparent;
+  }
+}
+table.pts-live tbody tr.lb-row.is-returned-spot {
+  animation: vl-return-spot 1.6s var(--ease-out);
+}
+
+/* Make name & photo in table row clearly interactive */
+.who-cell .vl-shot {
+  transition: transform 0.2s var(--ease-out), border-color 0.2s;
+}
+table.pts-live tbody tr.lb-row:hover .who-cell .vl-shot {
+  transform: scale(1.08);
+  border-color: var(--acid);
+}
+table.pts-live tbody tr.lb-row:hover .who-name {
+  color: var(--acid);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 860px) {
+  .vc-main {
+    grid-template-columns: 1fr;
+  }
+  .vc-photo-col {
+    border-right: none;
+    border-bottom: 2px solid var(--line);
+    max-height: 340px;
+  }
+  .vc-full-line-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .vc-story-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .vc-full-line-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   CLEAN PRINT STYLESHEET — PRINTS "THE VIBER CARD" CLEANLY ON 1 PAGE
+   ========================================================================== */
+@media print {
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #0b0a08 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* When a Viber Card is open, print ONLY the Viber Card cleanly! */
+  body.has-viber-card-open .ticker-wrap,
+  body.has-viber-card-open .topbar,
+  body.has-viber-card-open .lb-hero,
+  body.has-viber-card-open .kpi-strip,
+  body.has-viber-card-open main.shell,
+  body.has-viber-card-open footer.site-foot,
+  body.has-viber-card-open .bell-toast,
+  body.has-viber-card-open .lead-takeover-overlay,
+  body.has-viber-card-open .vc-actions,
+  body.has-viber-card-open .vc-footer-nav {
+    display: none !important;
+  }
+  body.has-viber-card-open .viber-card-backdrop {
+    position: static !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: none !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+  body.has-viber-card-open .viber-card-modal {
+    max-width: 100% !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: 3px solid #0b0a08 !important;
+    background: #0b0a08 !important;
+    color: #f3efe6 !important;
+    page-break-inside: avoid;
+  }
+  body.has-viber-card-open .vc-main {
+    grid-template-columns: 280px 1fr !important;
+  }
+  body.has-viber-card-open .vc-full-line-grid {
+    grid-template-columns: repeat(7, 1fr) !important;
+  }
+  body.has-viber-card-open .vl-shot::after {
+    display: none !important;
+  }
+  body.has-viber-card-open .vl-shot img {
+    filter: grayscale(1) contrast(1.2) !important;
+  }
+}
+
+
 

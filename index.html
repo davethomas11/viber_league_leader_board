@@ -36,19 +36,20 @@
   </div>
 </div>
 
-<!-- Official Vibers League Top Navigation + V3 Broadcast Controls -->
+<!-- Official Vibers League Top Navigation + V4 Twist Card Controls -->
 <header class="topbar">
   <a class="brand" href="https://www.vibersleague.com/" aria-label="Vibers League Home">
     <span data-mark data-drain></span> VIBERS LEAGUE
-    <span class="v2-badge" title="V3.0 Kinetic Overtake Broadcast Edition"><span>V3.0</span></span>
+    <span class="v2-badge" title="V4.0 Twist Card Edition — The Viber Card"><span>V4.0 · TWIST</span></span>
   </a>
   <nav class="navlinks site-nav" aria-label="Primary Navigation">
     <a href="#podium">Podium</a>
     <a href="#standings" aria-current="page">Standings</a>
+    <a href="#viber-dave-thomas">Dave's Card ★</a>
+    <a href="#viber-zachary">Zachary's Card (No Photo)</a>
     <a href="#versus">Tale of the Tape ⚔</a>
     <a href="#dossiers">Dossiers</a>
-    <a href="#scoring">Rules &amp; Call</a>
-    <a href="?simulate_ranking_change=1" title="Reload with URL query ?simulate_ranking_change=1">Demo Link ↗</a>
+    <a href="?simulate_ranking_change=1" title="Reload with URL query ?simulate_ranking_change=1">Overtake Demo ↗</a>
   </nav>
   <div class="topbar-right">
     <button type="button" class="v2-ctl-btn is-active" id="btn-dave-overtake" title="Trigger choreographed 'DAVE TAKES THE LEAD' FLIP position-swap animation (?simulate_ranking_change=1)">
@@ -309,12 +310,9 @@
   </div>
 </main>
 
-<!-- Fighter Spotlight Modal -->
-<div class="vl-modal-backdrop" id="fighter-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Viber Dossier">
-  <div class="vl-modal">
-    <button type="button" class="vl-modal-close" data-close-modal aria-label="Close modal">ESC · CLOSE ✕</button>
-    <div id="fighter-modal-body"></div>
-  </div>
+<!-- Twist Card 01: THE VIBER CARD Modal -->
+<div class="viber-card-backdrop" id="fighter-modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-label="The Viber Card">
+  <div class="viber-card-modal" id="fighter-modal-body"></div>
 </div>
 
 <!-- V3 Full-Screen "DAVE TAKES THE LEAD" Championship Coronation Splash -->

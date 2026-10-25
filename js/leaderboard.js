@@ -1127,7 +1127,7 @@
       }).join(' ');
 
       html +=
-        '<tr class="' + rowCls + '" data-viber-id="' + esc(v.id) + '" data-toggle-row="' + esc(v.id) + '">' +
+        '<tr class="' + rowCls + '" id="row-' + esc(v.id) + '" tabindex="0" role="button" aria-label="Open Viber Card for ' + esc(v.name) + '" data-viber-id="' + esc(v.id) + '" data-open-modal="' + esc(v.id) + '">' +
           '<td class="rank-cell"><div class="rank-cell-inner"><span>' + pad(v.rank) + '</span>' + arrowHtml + '</div></td>' +
           '<td>' +
             '<div class="who-cell">' +
@@ -1260,71 +1260,203 @@
     grid.innerHTML = html;
   }
 
-  function openFighterModal(id) {
+  // ---------- THE VIBER CARD (TWIST CARD 01: MINUTE 30:00) ----------
+  function viberSlug(v) {
+    if (!v) return '';
+    return 'viber-' + String(v.name || v.id).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  function findViberByHash(rawHash) {
+    var h = String(rawHash || '').replace(/^#\/?/, '').trim().toLowerCase();
+    if (!h) return null;
+    // Ignore page section anchors
+    if (h === 'podium' || h === 'standings' || h === 'versus' || h === 'dossiers' || h === 'scoring') return null;
+
+    var stripped = h.replace(/^viber[-/]/, '');
+    for (var i = 0; i < state.vibers.length; i++) {
+      var v = state.vibers[i];
+      var idLow = v.id.toLowerCase();
+      var slug = viberSlug(v);
+      var nameSlug = slug.replace(/^viber-/, '');
+      var handleSlug = v.handle.replace(/^@/, '').toLowerCase().trim();
+      if (h === idLow || stripped === idLow || h === slug || stripped === nameSlug || (handleSlug && stripped === handleSlug)) {
+        return v;
+      }
+    }
+    return null;
+  }
+
+  function openFighterModal(id, opts) {
+    opts = opts || {};
     var v = state.previousMap[id];
     if (!v) return;
     state.modalId = id;
+    if (opts.triggerEl) {
+      state.lastTriggerEl = opts.triggerEl;
+    }
+
     var backdrop = document.getElementById('fighter-modal-backdrop');
     var body = document.getElementById('fighter-modal-body');
     if (!backdrop || !body) return;
 
-    var toolsHtml = v.tools.map(function (t) {
-      return '<span class="stack-pill"><i>' + esc(t) + '</i></span>';
-    }).join('');
+    var hashAddr = '#' + viberSlug(v);
+    if (!opts.fromHash && window.location.hash !== hashAddr) {
+      try {
+        history.replaceState(null, '', hashAddr);
+      } catch (e) {
+        window.location.hash = hashAddr;
+      }
+    }
+
+    var isFirst = v.rank === 1;
+    var toolsHtml = v.tools.length
+      ? v.tools.map(function (t) { return '<span class="stack-pill"><i>' + esc(t) + '</i></span>'; }).join(' ')
+      : esc(v.builds_with || 'Not yet listed');
+
+    // Find prev and next viber in current standings order for quick keyboard/button stepping
+    var idx = state.vibers.findIndex(function (x) { return x.id === v.id; });
+    var prevV = idx > 0 ? state.vibers[idx - 1] : state.vibers[state.vibers.length - 1];
+    var nextV = idx < state.vibers.length - 1 ? state.vibers[idx + 1] : state.vibers[0];
+
+    var statusBadges = '';
+    if (isFirst) statusBadges += '<span class="vl-pill vl-pill-acid vl-pill-skew"><span>#1 LEADER</span></span>';
+    if (v.wins > 0) statusBadges += '<span class="vl-pill vl-pill-skew" style="background:var(--ink);color:var(--acid);border:1px solid var(--acid)"><span>' + v.wins + (v.wins === 1 ? ' WIN' : ' WINS') + '</span></span>';
+    if (v.peoples_choice > 0) statusBadges += '<span class="vl-pill vl-pill-skew"><span>★ PEOPLE\'S CHOICE</span></span>';
 
     body.innerHTML =
-      '<div class="vl-modal-grid">' +
-        '<div class="vl-modal-visual" style="display:flex;flex-direction:column">' +
-          '<div style="flex:1;min-height:220px;position:relative">' + renderShot(v, { win: v.rank === 1 }) + '</div>' +
-          '<div style="background:var(--ink);padding:14px;border-top:1px solid var(--paper-15);text-align:center">' +
-            '<div class="dossier-block-k" style="margin-bottom:4px">5-AXIS COMBAT PROFILE</div>' +
-            buildRadarSvg(v, null) +
+      '<div class="vc-topbar">' +
+        '<div class="vc-topbar-left">' +
+          '<span class="vc-twist-tag"><span>THE VIBER CARD · ID ' + esc(v.id.toUpperCase()) + '</span></span>' +
+          '<span class="vc-address-pill" title="Direct shareable hash address for this viber card">ADDRESS: <code>' + esc(hashAddr) + '</code></span>' +
+        '</div>' +
+        '<div class="vc-actions">' +
+          '<button type="button" class="vc-btn" id="vc-copy-link" data-copy-hash="' + esc(hashAddr) + '"><span>🔗 COPY CARD LINK</span></button>' +
+          '<button type="button" class="vc-btn" id="vc-print-btn"><span>🖨 PRINT CARD</span></button>' +
+          '<button type="button" class="vc-btn vc-btn-close" data-close-modal aria-label="Close card and return to table"><span>✕ BACK TO TABLE</span></button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="vc-main">' +
+        '<div class="vc-photo-col">' +
+          '<div class="vc-photo-frame">' +
+            renderShot(v, { win: isFirst }) +
+            '<span class="vc-rank-stamp">#' + pad(v.rank) + '</span>' +
+            '<div class="vc-status-stamp">' + statusBadges + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="vl-modal-content">' +
-          '<div>' +
-            '<div class="modal-kicker">RANK #' + pad(v.rank) + ' · ' + esc(v.city) + ' · ID ' + esc(v.id.toUpperCase()) + '</div>' +
-            '<h2 class="modal-name">' + esc(v.name) + '</h2>' +
-            '<div class="podium-handle" style="margin-top:4px">' + esc(v.handle) + '</div>' +
-          '</div>' +
-          '<div class="modal-stats-strip">' +
-            '<div><div class="p-stat-k">POINTS</div><div class="p-stat-v is-acid">' + fmtPts(v.points) + '</div></div>' +
-            '<div><div class="p-stat-k">NIGHTS</div><div class="p-stat-v">' + v.episodes + '</div></div>' +
-            '<div><div class="p-stat-k">WINS</div><div class="p-stat-v is-acid">' + v.wins + '</div></div>' +
-            '<div><div class="p-stat-k">CROWD ★</div><div class="p-stat-v is-blood">' + v.peoples_choice + '</div></div>' +
-            '<div><div class="p-stat-k">BEST / LAST</div><div class="p-stat-v">' + fmtPts(v.best_night) + '/' + fmtPts(v.last_night) + '</div></div>' +
-          '</div>' +
-          '<div class="modal-detail-grid">' +
-            '<div>' +
-              '<div class="dossier-block-k">SIGNATURE MOVE</div>' +
-              '<div class="dossier-quote">"' + esc(v.signature_move || 'Unknown') + '"</div>' +
+
+        '<div class="vc-info-col">' +
+          '<div class="vc-header-block">' +
+            '<div class="vc-city-line">' +
+              '<span>CITY: ' + esc(v.city || 'Unlisted') + '</span>' +
+              '<span>·</span>' +
+              '<span>RANK #' + pad(v.rank) + ' OF ' + pad(state.vibers.length) + '</span>' +
             '</div>' +
-            '<div>' +
-              '<div class="dossier-block-k">FAVOURITE BUILD</div>' +
-              '<div class="dossier-block-v">' + esc(v.favourite_build || 'Not yet recorded on the clock') + '</div>' +
+            '<h2 class="vc-name' + (isFirst ? ' is-leader' : '') + '">' + esc(v.name) + '</h2>' +
+            '<div class="vc-handle">' + esc(v.handle || '@viber') + '</div>' +
+          '</div>' +
+
+          '<div class="vc-story-grid">' +
+            '<div class="vc-field">' +
+              '<div class="vc-field-k">BUILDS WITH</div>' +
+              '<div class="vc-field-v"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">' + toolsHtml + '</div></div>' +
             '</div>' +
-          '</div>' +
-          '<div>' +
-            '<div class="dossier-block-k">SCOUTING REPORT / KNOWN FOR</div>' +
-            '<div class="dossier-block-v">' + esc(v.known_for || 'Standby contender.') + '</div>' +
-          '</div>' +
-          '<div>' +
-            '<div class="dossier-block-k">AI WEAPONRY & STACK</div>' +
-            '<div class="podium-stack" style="margin-top:6px">' + toolsHtml + '</div>' +
+            '<div class="vc-field is-blood">' +
+              '<div class="vc-field-k">SIGNATURE MOVE</div>' +
+              '<div class="vc-field-v is-quote">"' + esc(v.signature_move || 'Classified') + '"</div>' +
+            '</div>' +
+            '<div class="vc-field is-full">' +
+              '<div class="vc-field-k">KNOWN FOR</div>' +
+              '<div class="vc-field-v">' + esc(v.known_for || 'Named for the next card, has not built on the clock yet.') + '</div>' +
+            '</div>' +
+            '<div class="vc-field is-full">' +
+              '<div class="vc-field-k">FAVOURITE BUILD</div>' +
+              '<div class="vc-field-v">' + esc(v.favourite_build || 'Yet to be built on the 60-minute clock.') + '</div>' +
+            '</div>' +
           '</div>' +
         '</div>' +
+      '</div>' +
+
+      '<div class="vc-full-line-wrap">' +
+        '<div class="vc-full-line-head">' +
+          '<span class="vc-full-line-title">THE FULL LINE · OFFICIAL SEASON TELEMETRY</span>' +
+          '<span class="vl-meta" style="line-height:1">AVG ' + fmtPts(v.ppg) + ' PTS / NIGHT</span>' +
+        '</div>' +
+        '<div class="vc-full-line-grid">' +
+          '<div class="vc-stat-cell is-pts">' +
+            '<div class="vc-stat-k">Points</div>' +
+            '<div class="vc-stat-v">' + fmtPts(v.points) + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">Nights</div>' +
+            '<div class="vc-stat-v">' + v.episodes + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">Wins</div>' +
+            '<div class="vc-stat-v' + (v.wins > 0 ? ' is-acid' : '') + '">' + v.wins + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">People\'s Choice</div>' +
+            '<div class="vc-stat-v' + (v.peoples_choice > 0 ? ' is-blood' : '') + '">' + v.peoples_choice + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">Yellow Cards</div>' +
+            '<div class="vc-stat-v' + (v.yellow_cards > 0 ? ' is-blood' : '') + '">' + v.yellow_cards + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">Best Night</div>' +
+            '<div class="vc-stat-v">' + fmtPts(v.best_night) + '</div>' +
+          '</div>' +
+          '<div class="vc-stat-cell">' +
+            '<div class="vc-stat-k">Last Night</div>' +
+            '<div class="vc-stat-v">' + fmtPts(v.last_night) + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="vc-footer-nav">' +
+        '<button type="button" class="vc-btn" data-open-modal="' + esc(prevV.id) + '"><span>← #' + pad(prevV.rank) + ' ' + esc(prevV.name) + '</span></button>' +
+        '<span>ESC OR CLICK OUTSIDE TO RETURN TO TABLE ROW</span>' +
+        '<button type="button" class="vc-btn" data-open-modal="' + esc(nextV.id) + '"><span>#' + pad(nextV.rank) + ' ' + esc(nextV.name) + ' →</span></button>' +
       '</div>';
 
+    document.body.classList.add('has-viber-card-open');
     backdrop.classList.add('is-open');
     backdrop.setAttribute('aria-hidden', 'false');
   }
 
   function closeFighterModal() {
+    var closedId = state.modalId;
     state.modalId = null;
+    document.body.classList.remove('has-viber-card-open');
     var backdrop = document.getElementById('fighter-modal-backdrop');
     if (backdrop) {
       backdrop.classList.remove('is-open');
       backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    // Clear the viber hash from the URL cleanly without jumping the page scroll
+    if (window.location.hash && findViberByHash(window.location.hash)) {
+      try {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (e) {}
+    }
+
+    // Return to the exact table row where the viber left it and highlight briefly
+    if (closedId) {
+      var targetRow = document.querySelector('#lb-tbody tr.lb-row[data-viber-id="' + closedId + '"]');
+      if (targetRow) {
+        targetRow.classList.remove('is-returned-spot');
+        void targetRow.offsetWidth;
+        targetRow.classList.add('is-returned-spot');
+        var rect = targetRow.getBoundingClientRect();
+        if (rect.top < 70 || rect.bottom > window.innerHeight - 40) {
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        try {
+          targetRow.focus({ preventScroll: true });
+        } catch (e) {}
+      }
     }
   }
 
@@ -1555,10 +1687,33 @@
         return;
       }
 
+      var copyBtn = e.target.closest('#vc-copy-link');
+      if (copyBtn) {
+        e.stopPropagation();
+        var urlToCopy = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(urlToCopy).catch(function () {});
+        }
+        copyBtn.classList.add('is-copied');
+        copyBtn.innerHTML = '<span>✓ LINK COPIED</span>';
+        setTimeout(function () {
+          copyBtn.classList.remove('is-copied');
+          copyBtn.innerHTML = '<span>🔗 COPY CARD LINK</span>';
+        }, 1800);
+        return;
+      }
+
+      var printBtn = e.target.closest('#vc-print-btn');
+      if (printBtn) {
+        e.stopPropagation();
+        window.print();
+        return;
+      }
+
       var modalTrigger = e.target.closest('[data-open-modal]');
       if (modalTrigger) {
         e.stopPropagation();
-        openFighterModal(modalTrigger.getAttribute('data-open-modal'));
+        openFighterModal(modalTrigger.getAttribute('data-open-modal'), { triggerEl: modalTrigger });
         return;
       }
 
@@ -1578,6 +1733,20 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && state.modalId) {
         closeFighterModal();
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.hasAttribute('data-open-modal') && !state.modalId) {
+        e.preventDefault();
+        openFighterModal(document.activeElement.getAttribute('data-open-modal'), { triggerEl: document.activeElement });
+      }
+    });
+
+    window.addEventListener('hashchange', function () {
+      var matched = findViberByHash(window.location.hash);
+      if (matched) {
+        openFighterModal(matched.id, { fromHash: true });
+      } else if (state.modalId && !window.location.hash) {
+        closeFighterModal();
       }
     });
   }
@@ -1590,12 +1759,25 @@
     state.rawSheetRows = FALLBACK_VIBERS;
     state.vibers = normalizeRows(FALLBACK_VIBERS);
     state.vibers.forEach(function (v) { state.previousMap[v.id] = v; });
-    pushFeedLog('BOOT', 'V3.0 KINETIC OVERTAKE ENGINE INITIALIZED', false);
+    pushFeedLog('BOOT', 'V4.0 TWIST CARD ENGINE INITIALIZED', false);
     renderAll();
+
+    // If URL already has a viber hash (#viber-dave-thomas or #v011), open their card immediately
+    if (window.location.hash) {
+      var initialMatch = findViberByHash(window.location.hash);
+      if (initialMatch) {
+        openFighterModal(initialMatch.id, { fromHash: true });
+      }
+    }
 
     bindEvents();
     initHeroCanvas();
-    fetchSheetData({ initialBoot: true, runChoreographyOnLoad: autoSimulateOvertake });
+    fetchSheetData({ initialBoot: true, runChoreographyOnLoad: autoSimulateOvertake }).then(function () {
+      if (window.location.hash && !state.modalId) {
+        var m = findViberByHash(window.location.hash);
+        if (m) openFighterModal(m.id, { fromHash: true });
+      }
+    });
     startPollingLoop();
   }
 
