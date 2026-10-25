@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vibers League · Official Live Leaderboard &amp; Season Standings</title>
-<meta name="description" content="Live leaderboard and fighter telemetry for Vibers League: the competitive league for AI creators. Polled live from the official Vancouver scorecards.">
+<title>Vibers League · V2.0 Live Leaderboard &amp; Fight-Night Telemetry</title>
+<meta name="description" content="V2.0 Live leaderboard, Tale of the Tape head-to-head arena, 5-axis combat radar, and Google Sheets polling telemetry for Vibers League.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Vibers League">
-<meta property="og:title" content="Vibers League · Official Live Leaderboard">
-<meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Follow the live season standings, wins, People's Choice crowns, and fighter dossiers.">
+<meta property="og:title" content="Vibers League · V2.0 Official Live Leaderboard">
+<meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Live season standings, Tale of the Tape, and fighter dossiers.">
 <meta property="og:image" content="assets/og-card-v2.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.svg">
@@ -31,28 +31,35 @@
   <div class="ticker-bar">
     <div class="ticker-progress"></div>
     <div class="ticker-inner" id="live-ticker-content">
-      LIVE STANDINGS FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
+      V2.0 LIVE STANDINGS FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
     </div>
   </div>
 </div>
 
-<!-- Official Vibers League Top Navigation -->
+<!-- Official Vibers League Top Navigation + V2 Broadcast Controls -->
 <header class="topbar">
   <a class="brand" href="https://www.vibersleague.com/" aria-label="Vibers League Home">
     <span data-mark data-drain></span> VIBERS LEAGUE
+    <span class="v2-badge" title="V2.0 Overdrive Broadcast Edition"><span>V2.0</span></span>
   </a>
   <nav class="navlinks site-nav" aria-label="Primary Navigation">
-    <a href="https://www.vibersleague.com/">Home</a>
-    <a href="https://www.vibersleague.com/episodes/">Episodes</a>
-    <a href="#standings" aria-current="page">Leaderboard</a>
+    <a href="#podium">Podium</a>
+    <a href="#standings" aria-current="page">Standings</a>
+    <a href="#versus">Tale of the Tape ⚔</a>
     <a href="#dossiers">Dossiers</a>
-    <a href="#scoring">Scoring</a>
-    <a href="https://www.vibersleague.com/apply/">Apply</a>
+    <a href="#scoring">Rules &amp; Call</a>
+    <a href="https://www.vibersleague.com/" target="_blank" rel="noopener">Main Site ↗</a>
   </nav>
   <div class="topbar-right">
-    <a class="flag" href="https://docs.google.com/spreadsheets/d/17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk/edit?pli=1" target="_blank" rel="noopener" title="Open live Google Sheet data source">
-      <span class="vl-live-dot"></span> LIVE SHEET FEED ↗
-    </a>
+    <button type="button" class="v2-ctl-btn" id="btn-sound-fx" title="Toggle Web Audio Ringside Bell &amp; Telemetry Sound FX">
+      <span>🔕 BELL FX: OFF</span>
+    </button>
+    <button type="button" class="v2-ctl-btn" id="btn-sim-mode" title="Simulate live ringside judge scorecards coming in to test real-time rank shifts">
+      <span>⚡ SIMULATE FIGHT NIGHT</span>
+    </button>
+    <button type="button" class="v2-ctl-btn" id="btn-tv-mode" title="Toggle Fullscreen Jumbotron TV Mode">
+      <span>📺 JUMBOTRON</span>
+    </button>
   </div>
 </header>
 
@@ -64,7 +71,7 @@
   <div class="lb-hero-grid">
     <div class="lb-hero-copy">
       <div class="lb-kicker-row">
-        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED</span></span>
+        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED · V2.0</span></span>
         <span class="vl-kicker">SEASON 01 · VANCOUVER, BC</span>
       </div>
       <h1>
@@ -73,12 +80,17 @@
         <span class="l3">Board.</span>
       </h1>
       <p class="lb-hero-sub">
-        Every night a viber fights on the 60-minute clock, <strong>3 scorecards worth 30 points</strong> go on the line: the whale, the shark, and the room. Automatically polled from the official ringside sheet.
+        Every night a viber fights on the 60-minute clock, <strong>3 scorecards worth 30 points</strong> go on the line: the whale, the shark, and the room. Automatically polled from the <a href="https://docs.google.com/spreadsheets/d/17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk/edit?pli=1" target="_blank" rel="noopener" style="text-decoration:underline;text-underline-offset:3px">official ringside Google Sheet ↗</a>.
       </p>
     </div>
 
-    <!-- Live Polling Engine Telemetry HUD -->
-    <aside class="telemetry-hud" aria-label="Live Google Sheet Polling Telemetry">
+    <!-- Live Polling Engine Telemetry HUD with Camera Crop Marks & Event Log -->
+    <aside class="telemetry-hud hud-crops" aria-label="Live Google Sheet Polling Telemetry">
+      <i class="crop c1" aria-hidden="true"></i>
+      <i class="crop c2" aria-hidden="true"></i>
+      <i class="crop c3" aria-hidden="true"></i>
+      <i class="crop c4" aria-hidden="true"></i>
+
       <div class="hud-top">
         <div class="hud-status" id="hud-status">
           <span class="hud-pulse"></span>
@@ -120,6 +132,9 @@
           <button type="button" class="hud-btn" id="btn-sync-now"><span>SYNC NOW ↻</span></button>
         </div>
       </div>
+
+      <!-- V2 Live Ringside Event Feed Log -->
+      <div class="hud-feed-log" id="hud-feed-log" aria-live="polite"></div>
     </aside>
   </div>
 </section>
@@ -135,7 +150,7 @@
       <div class="season-head">
         <h2>Top of the <em>card.</em></h2>
         <div class="rule"></div>
-        <div class="vl-meta">PODIUM LEADERS · CLICK ANY FIGHTER FOR DOSSIER</div>
+        <div class="vl-meta">PODIUM LEADERS · CLICK ANY FIGHTER FOR 5-AXIS DOSSIER</div>
       </div>
       <div class="podium-grid" id="podium-container" data-spot></div>
     </section>
@@ -149,7 +164,7 @@
       </div>
 
       <!-- Filter & Search Controls -->
-      <div class="lb-toolbar">
+      <div class="lb-toolbar" style="margin-bottom:0">
         <div class="lb-filters" role="tablist" aria-label="Filter Vibers">
           <button type="button" class="filter-btn active" data-filter="all">
             <span>ALL VIBERS <em class="filter-count" data-filter-count="all"></em></span>
@@ -173,6 +188,9 @@
         </div>
       </div>
 
+      <!-- V2 Interactive AI Stack Filter Bar -->
+      <div class="stack-cloud-bar" id="stack-cloud-bar" aria-label="Filter by AI Tool Stack"></div>
+
       <!-- Standings Table -->
       <div class="lb-table-wrap">
         <table class="pts-live" aria-label="Vibers League Standings">
@@ -194,11 +212,41 @@
       </div>
 
       <p class="fine-note">
-        Points carry over from every night a viber fights: up to 8 from the 2 judges (the whale and the shark) and up to 4 from the crowd card, less any yellow card. Any tie on a night goes to the viber the whale ranked higher. Click any row to inspect the builder's signature move, scouting report, and favourite build.
+        Points carry over from every night a viber fights: up to 8 from the 2 judges (the whale and the shark) and up to 4 from the crowd card, less any yellow card. Any tie on a night goes to the viber the whale ranked higher. Hit <strong>⚡ SIMULATE FIGHT NIGHT</strong> in the top bar to preview live scorecard calls and rank-shift animations.
       </p>
     </section>
 
-    <!-- Section 3: How Scoring Works (3 Scorecards Breakdown) -->
+    <!-- Section 3 (V2 NEW): Tale of the Tape — Head-to-Head Matchup Arena -->
+    <section class="season-sec" id="versus">
+      <div class="season-head">
+        <h2>Tale of the <em>tape.</em></h2>
+        <div class="rule"></div>
+        <div class="vl-meta">HEAD-TO-HEAD FIGHTER COMPARISON &amp; 5-AXIS COMBAT RADAR</div>
+      </div>
+
+      <div class="versus-arena hud-crops">
+        <i class="crop c1" aria-hidden="true"></i>
+        <i class="crop c2" aria-hidden="true"></i>
+        <i class="crop c3" aria-hidden="true"></i>
+        <i class="crop c4" aria-hidden="true"></i>
+
+        <div class="versus-selectors">
+          <div class="vs-picker">
+            <label class="vs-corner-label" for="vs-select-left">ACID CORNER · CONTENDER 01</label>
+            <select id="vs-select-left" class="vs-select"></select>
+          </div>
+          <div class="vs-badge-center">VS</div>
+          <div class="vs-picker right">
+            <label class="vs-corner-label" for="vs-select-right">BLOOD CORNER · CONTENDER 02</label>
+            <select id="vs-select-right" class="vs-select"></select>
+          </div>
+        </div>
+
+        <div id="versus-arena-body"></div>
+      </div>
+    </section>
+
+    <!-- Section 4: How Scoring Works (3 Scorecards Breakdown) -->
     <section class="season-sec" id="scoring">
       <div class="season-head">
         <h2>How the call is <em>made.</em></h2>
@@ -239,7 +287,7 @@
       </div>
     </section>
 
-    <!-- Section 4: Full Viber Dossier Cards Grid -->
+    <!-- Section 5: Full Viber Dossier Cards Grid -->
     <section class="season-sec" id="dossiers">
       <div class="season-head">
         <h2>The fighter <em>dossiers.</em></h2>
@@ -266,16 +314,27 @@
   </div>
 </div>
 
+<!-- Ringside Bell Toast Notification -->
+<div class="bell-toast" id="bell-toast" role="status" aria-live="polite">
+  <div class="bell-toast-inner">
+    <span class="vl-live-dot" style="width:12px;height:12px"></span>
+    <div>
+      <div class="bell-toast-title" id="bell-toast-title">SCORECARD CALL</div>
+      <div class="bell-toast-sub" id="bell-toast-sub">POINTS UPDATED ON THE BOARD</div>
+    </div>
+  </div>
+</div>
+
 <!-- Official Vibers League Footer -->
 <footer class="site-foot">
   <div class="shell">
     <div class="foot-row">
       <div class="foot-brand">
-        <div class="brand"><span data-mark></span> VIBERS LEAGUE</div>
+        <div class="brand"><span data-mark></span> VIBERS LEAGUE <span class="v2-badge" style="font-size:11px;padding:2px 7px;margin-left:6px"><span>V2.0</span></span></div>
         <div class="foot-tag">The competitive league for AI creators</div>
       </div>
       <div class="vl-meta">
-        LIVE LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
+        V2.0 LIVE LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
         &copy; 2026 VIBERS LEAGUE &middot; BUILT LIVE ON THE CLOCK
         <div class="foot-links">
           <a href="https://www.vibersleague.com/">Home</a>

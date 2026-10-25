@@ -1,5 +1,6 @@
 /* ==========================================================================
-   VIBERS LEAGUE — LIVE LEADERBOARD ENGINE & POLLING TELEMETRY
+   VIBERS LEAGUE V2 OVERDRIVE — LIVE LEADERBOARD, TELEMETRY, TALE OF THE TAPE,
+   5-AXIS RADAR CHARTS, RINGSIDE SOUND FX & LIVE NIGHT SIMULATOR
    Data Source: Google Sheets (17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk)
    ========================================================================== */
 (function () {
@@ -8,9 +9,7 @@
   var SHEET_ID = '17f1nH3vcuk-pPknxTF1mcL6tn9v_gsexvFAlDhfq_lk';
   var GVIZ_JSON_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json';
   var GVIZ_CSV_URL  = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv';
-  var SHEET_EDIT_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit?pli=1';
 
-  // Fallback snapshot in case user is temporarily offline on first paint
   var FALLBACK_VIBERS = [
     { id: 'v011', name: 'Dave Thomas', handle: '@name1', photo_url: 'https://drive.google.com/file/d/1Ejlo5-nOoxuPGjLlWcE0r0n2-jFM-ami/view?usp=drive_link', points: 31, episodes: 3, wins: 2, peoples_choice: 1, yellow_cards: 0, best_night: 12, last_night: 11, city: 'Burnaby', builds_with: 'Claude Code, Vercel', signature_move: 'Deploys at minute 20', known_for: 'Two wins from three nights, and the only clean sweep so far', favourite_build: 'A quoting tool for a roofing crew' },
     { id: 'v008', name: 'Ollie', handle: '@ollie', photo_url: 'https://drive.google.com/file/d/1oMC4HO-X3lxkJHcG5MiIXB19tmVoA3rk/view?usp=drive_link', points: 27, episodes: 3, wins: 1, peoples_choice: 1, yellow_cards: 0, best_night: 10, last_night: 9, city: 'Vancouver', builds_with: 'Claude Code, Railway, Postgres', signature_move: 'Reads the brief twice before typing', known_for: "One win, one People's Choice, never below second on the whale card", favourite_build: 'A shift planner for a cafe' },
@@ -24,25 +23,124 @@
     { id: 'v002', name: 'Ashish', handle: '@ashish', photo_url: 'https://drive.google.com/file/d/1GhNQxCMNw1Y-dAKlyA-olGKZ8xtcr6Nl/view?usp=sharing', points: 0, episodes: 0, wins: 0, peoples_choice: 0, yellow_cards: 0, best_night: 0, last_night: 0, city: 'Mision', builds_with: 'Notepad', signature_move: 'Text Wrapping', known_for: 'Writing succinct product requirements', favourite_build: 'His quarterly epics for work' }
   ];
 
-  // State
+  // Application State
   var state = {
     vibers: [],
+    rawSheetRows: [],
     previousMap: {},
     changedIds: {},
-    filter: 'all', // 'all', 'active', 'winners', 'peoples_choice', 'standby'
+    rankDeltaMap: {},
+    filter: 'all',
+    toolFilter: '',
     search: '',
     sortBy: 'rank',
     sortDir: 'asc',
     expandedIds: {},
     modalId: null,
+    vsLeftId: 'v011',
+    vsRightId: 'v008',
     pollIntervalMs: 10000,
     isPaused: false,
     isSyncing: false,
+    isSimulating: false,
+    soundEnabled: false,
+    tvMode: false,
     syncCount: 0,
     lastSyncTime: null,
-    lastDataSig: '',
-    nextSyncAt: 0
+    nextSyncAt: 0,
+    feedLog: []
   };
+
+  // ---------- Web Audio API Synthesizer (Ringside Bell & Telemetry Beeps) ----------
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playRingsideBell() {
+    if (!state.soundEnabled) return;
+    try {
+      ensureAudio();
+      if (!audioCtx) return;
+      var now = audioCtx.currentTime;
+      // Metallic fight-bell partials
+      var freqs = [587.33, 1174.66, 1760, 2489.02];
+      freqs.forEach(function (f, idx) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.18 / (idx + 1), now);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 1.45);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 1.5);
+      });
+    } catch (e) {}
+  }
+
+  function playSyncPulse() {
+    if (!state.soundEnabled) return;
+    try {
+      ensureAudio();
+      if (!audioCtx) return;
+      var now = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } catch (e) {}
+  }
+
+  // ---------- Toast Notification ----------
+  var toastTimer = 0;
+  function showBellToast(title, sub) {
+    var toast = document.getElementById('bell-toast');
+    var tEl = document.getElementById('bell-toast-title');
+    var sEl = document.getElementById('bell-toast-sub');
+    if (!toast || !tEl || !sEl) return;
+    tEl.textContent = title;
+    sEl.textContent = sub;
+    toast.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toast.classList.remove('is-visible');
+    }, 4200);
+  }
+
+  // ---------- Live Event Feed Log ----------
+  function pushFeedLog(tag, msg, isSim) {
+    var nowStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    state.feedLog.unshift({ time: nowStr, tag: tag, msg: msg, isSim: !!isSim });
+    if (state.feedLog.length > 16) state.feedLog.pop();
+    renderFeedLog();
+  }
+
+  function renderFeedLog() {
+    var el = document.getElementById('hud-feed-log');
+    if (!el) return;
+    el.innerHTML = state.feedLog.map(function (item) {
+      return '<div class="hud-log-entry' + (item.isSim ? ' is-sim' : '') + '">' +
+        '<span class="t">' + esc(item.time) + '</span>' +
+        '<span class="tag">[' + esc(item.tag) + ']</span>' +
+        '<span class="msg">' + esc(item.msg) + '</span>' +
+      '</div>';
+    }).join('');
+  }
 
   // ---------- Utilities ----------
   function esc(s) {
@@ -71,7 +169,6 @@
     return ((p[0] || '?').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
   }
 
-  // Transform Google Drive file view URLs into direct fast-loading thumbnail image URLs
   function resolvePhotoUrl(rawUrl) {
     if (!rawUrl) return '';
     var s = String(rawUrl).trim();
@@ -83,7 +180,6 @@
     return s;
   }
 
-  // Render authentic Vibers League .vl-shot headshot component with automatic initials fallback
   function renderShot(v, opts) {
     opts = opts || {};
     var cls = 'vl-shot' + (opts.round ? ' is-round' : '') + (opts.win ? ' is-win' : '');
@@ -98,13 +194,65 @@
       '</span>';
   }
 
-  // Official ranking comparator:
-  // 1. Points DESC
-  // 2. Wins DESC
-  // 3. Best Night DESC
-  // 4. People's Choice DESC
-  // 5. Last Night DESC
-  // 6. Episodes DESC
+  // 5-Axis Combat Radar Polygon SVG Generator
+  // Axes: 1. Dominance (Points), 2. Clutch (Wins), 3. Ceiling (Best Night), 4. Crowd Pull (People's Choice), 5. Discipline (Clean Record + Consistency)
+  function buildRadarSvg(v1, v2) {
+    var size = 240;
+    var cx = size / 2;
+    var cy = size / 2;
+    var rMax = 78;
+    var labels = ['POINTS', 'WINS', 'PEAK NIGHT', 'CROWD ★', 'PACE / EP'];
+
+    function getMetrics(v) {
+      if (!v) return [0.1, 0.1, 0.1, 0.1, 0.1];
+      return [
+        Math.min(1, Math.max(0.12, v.points / 36)),
+        Math.min(1, Math.max(0.12, v.wins / 3)),
+        Math.min(1, Math.max(0.12, v.best_night / 12)),
+        Math.min(1, Math.max(0.12, v.peoples_choice / 2)),
+        Math.min(1, Math.max(0.12, (v.ppg / 12) - (v.yellow_cards * 0.08)))
+      ];
+    }
+
+    function polyPoints(vals) {
+      return vals.map(function (val, idx) {
+        var angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2;
+        var x = cx + Math.cos(angle) * (rMax * val);
+        var y = cy + Math.sin(angle) * (rMax * val);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+    }
+
+    var rings = [0.33, 0.66, 1].map(function (scale) {
+      var pts = [0, 1, 2, 3, 4].map(function (idx) {
+        var angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2;
+        var x = cx + Math.cos(angle) * (rMax * scale);
+        var y = cy + Math.sin(angle) * (rMax * scale);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      return '<polygon points="' + pts + '" fill="none" stroke="rgba(243,239,230,0.14)" stroke-width="1"/>';
+    }).join('');
+
+    var spokes = [0, 1, 2, 3, 4].map(function (idx) {
+      var angle = (Math.PI * 2 * idx) / 5 - Math.PI / 2;
+      var x = cx + Math.cos(angle) * rMax;
+      var y = cy + Math.sin(angle) * rMax;
+      var lx = cx + Math.cos(angle) * (rMax + 24);
+      var ly = cy + Math.sin(angle) * (rMax + 18);
+      return '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="rgba(243,239,230,0.14)" stroke-width="1"/>' +
+        '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="middle" fill="rgba(243,239,230,0.7)" font-family="Barlow Condensed, sans-serif" font-weight="800" font-style="italic" font-size="10" letter-spacing="1.5">' + labels[idx] + '</text>';
+    }).join('');
+
+    var p1 = polyPoints(getMetrics(v1));
+    var p2 = v2 ? polyPoints(getMetrics(v2)) : '';
+
+    return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="100%" height="220" style="overflow:visible">' +
+      rings + spokes +
+      (v2 ? '<polygon points="' + p2 + '" fill="rgba(255,43,43,0.24)" stroke="#ff2b2b" stroke-width="2"/>' : '') +
+      '<polygon points="' + p1 + '" fill="rgba(232,255,42,0.28)" stroke="#e8ff2a" stroke-width="2.5"/>' +
+      '</svg>';
+  }
+
   function compareOfficialRank(a, b) {
     return (b.points - a.points) ||
            (b.wins - a.wins) ||
@@ -158,7 +306,7 @@
     return cleaned;
   }
 
-  // ---------- Parsers (GViz JSON + RFC-4180 CSV Fallback) ----------
+  // ---------- Parsers ----------
   function parseGvizJson(text) {
     var start = text.indexOf('{');
     var end = text.lastIndexOf('}');
@@ -230,9 +378,71 @@
     return { sig: String(text.length), rows: items };
   }
 
+  // ---------- Apply Incoming Data & Diff ----------
+  function applyNormalizedData(normalized, sourceTag) {
+    var newChanged = {};
+    var hasChanges = false;
+    var deltas = {};
+
+    if (Object.keys(state.previousMap).length > 0) {
+      normalized.forEach(function (v) {
+        var prev = state.previousMap[v.id];
+        if (!prev) {
+          newChanged[v.id] = true;
+          hasChanges = true;
+        } else {
+          if (prev.rank !== v.rank) {
+            deltas[v.id] = prev.rank - v.rank; // positive = moved up
+          }
+          if (prev.points !== v.points ||
+              prev.rank !== v.rank ||
+              prev.wins !== v.wins ||
+              prev.episodes !== v.episodes ||
+              prev.peoples_choice !== v.peoples_choice ||
+              prev.yellow_cards !== v.yellow_cards) {
+            newChanged[v.id] = true;
+            hasChanges = true;
+            var ptDiff = v.points - prev.points;
+            var msg = v.name + (ptDiff > 0 ? ' +' + fmtPts(ptDiff) + ' PTS' : ' UPDATED') + ' → RANK #' + pad(v.rank) + ' (' + fmtPts(v.points) + ' PTS)';
+            pushFeedLog(sourceTag || 'CALL', msg, sourceTag === 'SIM');
+            showBellToast(v.name.toUpperCase() + ' ON THE BOARD!', msg);
+          }
+        }
+      });
+    } else {
+      hasChanges = true;
+    }
+
+    var nextMap = {};
+    normalized.forEach(function (v) { nextMap[v.id] = v; });
+
+    state.vibers = normalized;
+    state.previousMap = nextMap;
+    state.changedIds = newChanged;
+    if (Object.keys(deltas).length > 0) {
+      state.rankDeltaMap = deltas;
+    }
+
+    if (hasChanges) {
+      if (state.syncCount > 1 || sourceTag === 'SIM') {
+        playRingsideBell();
+      }
+      renderAll();
+      if (Object.keys(newChanged).length > 0) {
+        setTimeout(function () {
+          state.changedIds = {};
+        }, 2200);
+      }
+    }
+  }
+
   // ---------- Live Polling System ----------
   function fetchSheetData() {
     if (state.isSyncing) return Promise.resolve();
+    if (state.isSimulating) {
+      simulateFightNightCall();
+      return Promise.resolve();
+    }
     state.isSyncing = true;
     updateHudStatus('SYNCING SHEET...', 'is-syncing');
 
@@ -244,7 +454,6 @@
       })
       .then(parseGvizJson)
       .catch(function () {
-        // Fallback to CSV endpoint if JSON wrapper ever hiccups
         return fetch(GVIZ_CSV_URL + cacheBust, { cache: 'no-store' })
           .then(function (res) {
             if (!res.ok) throw new Error('CSV HTTP ' + res.status);
@@ -253,62 +462,58 @@
           .then(parseCsv);
       })
       .then(function (result) {
+        state.rawSheetRows = result.rows;
         var normalized = normalizeRows(result.rows);
-        var newChanged = {};
-        var hasChanges = false;
-
-        if (Object.keys(state.previousMap).length > 0) {
-          normalized.forEach(function (v) {
-            var prev = state.previousMap[v.id];
-            if (!prev ||
-                prev.points !== v.points ||
-                prev.rank !== v.rank ||
-                prev.wins !== v.wins ||
-                prev.episodes !== v.episodes ||
-                prev.peoples_choice !== v.peoples_choice ||
-                prev.yellow_cards !== v.yellow_cards ||
-                prev.name !== v.name) {
-              newChanged[v.id] = true;
-              hasChanges = true;
-            }
-          });
-        } else {
-          hasChanges = true;
-        }
-
-        var nextMap = {};
-        normalized.forEach(function (v) { nextMap[v.id] = v; });
-
-        state.vibers = normalized;
-        state.previousMap = nextMap;
-        state.changedIds = newChanged;
         state.syncCount++;
         state.lastSyncTime = new Date();
         state.isSyncing = false;
         state.nextSyncAt = performance.now() + state.pollIntervalMs;
 
+        playSyncPulse();
+        if (state.syncCount === 1) {
+          pushFeedLog('SYNC', 'LOCKED ONTO GOOGLE SHEET · ' + normalized.length + ' VIBERS LOADED', false);
+        } else {
+          pushFeedLog('POLL #' + pad(state.syncCount), 'G-SHEET VERIFIED · ALL SCORECARDS FRESH', false);
+        }
+
         updateHudStatus(state.isPaused ? 'POLLING PAUSED' : 'LIVE · FEED LOCKED', '');
         updateTelemetryStats();
-
-        if (hasChanges || state.syncCount === 1) {
-          renderAll();
-          if (Object.keys(newChanged).length > 0) {
-            setTimeout(function () {
-              state.changedIds = {};
-            }, 2000);
-          }
-        }
+        applyNormalizedData(normalized, 'LIVE');
       })
       .catch(function (err) {
         console.warn('Live sheet poll error:', err);
         state.isSyncing = false;
         state.nextSyncAt = performance.now() + state.pollIntervalMs;
         updateHudStatus('RETRYING FEED...', 'is-error');
+        pushFeedLog('WARN', 'NETWORK HICCUP · RETRYING NEXT CYCLE', false);
         if (!state.vibers.length) {
           state.vibers = normalizeRows(FALLBACK_VIBERS);
           renderAll();
         }
       });
+  }
+
+  // ---------- Live Fight-Night Simulator (Demo Mode for Stakeholders) ----------
+  function simulateFightNightCall() {
+    if (!state.vibers.length) return;
+    var cloned = state.vibers.map(function (v) { return Object.assign({}, v); });
+    // Pick a random contender to receive a fresh judge/crowd scorecard call
+    var idx = Math.floor(Math.random() * cloned.length);
+    var target = cloned[idx];
+    var addedPts = [3, 4, 6, 8, 9, 11][Math.floor(Math.random() * 6)];
+    target.points += addedPts;
+    target.episodes += 1;
+    target.last_night = addedPts;
+    if (addedPts > target.best_night) target.best_night = addedPts;
+    if (addedPts >= 9) target.wins += 1;
+    if (addedPts === 11 || addedPts === 8) target.peoples_choice += 1;
+
+    state.syncCount++;
+    state.lastSyncTime = new Date();
+    state.nextSyncAt = performance.now() + state.pollIntervalMs;
+    updateTelemetryStats();
+    var normalized = normalizeRows(cloned);
+    applyNormalizedData(normalized, 'SIM');
   }
 
   function updateHudStatus(text, modClass) {
@@ -330,7 +535,6 @@
     if (rosterEl) rosterEl.textContent = state.vibers.length + ' VIBERS';
   }
 
-  // Smooth RAF loop for telemetry countdown and drain bar
   function startPollingLoop() {
     state.nextSyncAt = performance.now() + state.pollIntervalMs;
     var countEl = document.getElementById('hud-countdown-val');
@@ -373,7 +577,7 @@
       return '#' + (idx + 1) + ' ' + esc(v.name.toUpperCase()) + ' <b>' + fmtPts(v.points) + ' PTS</b>';
     }).join('<span class="sep">★</span>');
 
-    var unit = 'LIVE STANDINGS FEED <span class="sep">★</span> CURRENT LEADER: <b>' + esc(leader.name.toUpperCase()) + ' (' + fmtPts(leader.points) + ' PTS)</b>' +
+    var unit = 'V2.0 LIVE BROADCAST FEED <span class="sep">★</span> CURRENT LEADER: <b>' + esc(leader.name.toUpperCase()) + ' (' + fmtPts(leader.points) + ' PTS)</b>' +
       '<span class="sep">★</span>' + topThree +
       '<span class="sep">★</span>' + activeCount + ' RANKED VIBERS · ' + fmtPts(totalPts) + ' TOTAL LEAGUE POINTS ON THE BOARD' +
       '<span class="sep">★</span> 60:00 ON THE CLOCK · VANCOUVER, BC <span class="sep">★</span> ';
@@ -421,7 +625,6 @@
         '<div class="kpi-sub">CROWD CROWNS AWARDED</div>' +
       '</div>';
 
-    // Update filter counts
     var counts = {
       all: v.length,
       active: activeCount,
@@ -433,6 +636,30 @@
       var badge = document.querySelector('[data-filter-count="' + k + '"]');
       if (badge) badge.textContent = '(' + counts[k] + ')';
     });
+  }
+
+  function renderStackCloud() {
+    var cloudEl = document.getElementById('stack-cloud-bar');
+    if (!cloudEl) return;
+    var counts = {};
+    state.vibers.forEach(function (v) {
+      v.tools.forEach(function (t) {
+        counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    var tools = Object.keys(counts).sort(function (a, b) {
+      return (counts[b] - counts[a]) || a.localeCompare(b);
+    });
+
+    var html = '<span class="stack-cloud-label">AI WEAPONRY FILTER:</span>' +
+      '<button type="button" class="stack-filter-pill' + (!state.toolFilter ? ' active' : '') + '" data-tool-filter=""><i>ALL STACKS</i></button>';
+
+    tools.forEach(function (t) {
+      var isAct = state.toolFilter.toLowerCase() === t.toLowerCase();
+      html += '<button type="button" class="stack-filter-pill' + (isAct ? ' active' : '') + '" data-tool-filter="' + esc(t) + '">' +
+        '<i>' + esc(t) + ' <b>×' + counts[t] + '</b></i></button>';
+    });
+    cloudEl.innerHTML = html;
   }
 
   function renderPodium() {
@@ -492,13 +719,110 @@
     container.innerHTML = html;
   }
 
+  // ---------- Tale of the Tape: Head-to-Head Matchup Arena ----------
+  function renderVersusArena() {
+    var arena = document.getElementById('versus-arena-body');
+    var selL = document.getElementById('vs-select-left');
+    var selR = document.getElementById('vs-select-right');
+    if (!arena || !state.vibers.length) return;
+
+    var vLeft = state.previousMap[state.vsLeftId] || state.vibers[0];
+    var vRight = state.previousMap[state.vsRightId] || state.vibers[1] || state.vibers[0];
+    state.vsLeftId = vLeft.id;
+    state.vsRightId = vRight.id;
+
+    if (selL && selR) {
+      selL.innerHTML = state.vibers.map(function (v) {
+        return '<option value="' + esc(v.id) + '"' + (v.id === vLeft.id ? ' selected' : '') + '>#' + pad(v.rank) + ' · ' + esc(v.name.toUpperCase()) + ' (' + fmtPts(v.points) + ' PTS)</option>';
+      }).join('');
+      selR.innerHTML = state.vibers.map(function (v) {
+        return '<option value="' + esc(v.id) + '"' + (v.id === vRight.id ? ' selected' : '') + '>#' + pad(v.rank) + ' · ' + esc(v.name.toUpperCase()) + ' (' + fmtPts(v.points) + ' PTS)</option>';
+      }).join('');
+    }
+
+    var metrics = [
+      { label: 'TOTAL POINTS', l: vLeft.points, r: vRight.points, max: 36 },
+      { label: 'NIGHT WINS', l: vLeft.wins, r: vRight.wins, max: 3 },
+      { label: 'PEAK NIGHT', l: vLeft.best_night, r: vRight.best_night, max: 12 },
+      { label: 'POINTS / NIGHT', l: vLeft.ppg, r: vRight.ppg, max: 12 },
+      { label: 'PEOPLE\'S CHOICE ★', l: vLeft.peoples_choice, r: vRight.peoples_choice, max: 2 }
+    ];
+
+    var barsHtml = metrics.map(function (m) {
+      var lPct = Math.min(100, Math.max(4, Math.round((m.l / m.max) * 100)));
+      var rPct = Math.min(100, Math.max(4, Math.round((m.r / m.max) * 100)));
+      var lLead = m.l > m.r;
+      var rLead = m.r > m.l;
+      return '<div class="vs-metric-row">' +
+        '<div class="vs-metric-head">' +
+          '<span class="vs-val-l' + (lLead ? ' is-lead' : '') + '">' + fmtPts(m.l) + '</span>' +
+          '<span class="vs-metric-label">' + m.label + '</span>' +
+          '<span class="vs-val-r' + (rLead ? ' is-lead' : '') + '">' + fmtPts(m.r) + '</span>' +
+        '</div>' +
+        '<div class="vs-tug-track">' +
+          '<div class="vs-tug-left"><div class="vs-tug-fill-l" style="width:' + (m.l > 0 ? lPct : 0) + '%"></div></div>' +
+          '<div class="vs-tug-right"><div class="vs-tug-fill-r" style="width:' + (m.r > 0 ? rPct : 0) + '%"></div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var diffPts = Math.abs(vLeft.points - vRight.points);
+    var edgeHolder = vLeft.rank < vRight.rank ? vLeft : vRight;
+
+    arena.innerHTML =
+      '<div class="versus-stage">' +
+        '<div class="vs-fighter-col is-left" data-open-modal="' + esc(vLeft.id) + '" style="cursor:pointer">' +
+          renderShot(vLeft, { win: true }) +
+          '<div>' +
+            '<div class="vs-f-meta">ACID CORNER · RANK #' + pad(vLeft.rank) + ' · ' + esc(vLeft.city) + '</div>' +
+            '<h3 class="vs-f-name">' + esc(vLeft.name) + '</h3>' +
+          '</div>' +
+          '<div class="vs-f-move">"' + esc(vLeft.signature_move || 'Classified') + '"</div>' +
+          '<div class="podium-stack" style="margin-top:4px">' + vLeft.tools.map(function (t) { return '<span class="stack-pill"><i>' + esc(t) + '</i></span>'; }).join('') + '</div>' +
+        '</div>' +
+
+        '<div class="vs-metrics-center">' +
+          '<div style="display:grid;grid-template-columns:1.15fr 0.85fr;gap:24px;align-items:center">' +
+            '<div style="display:flex;flex-direction:column;gap:14px">' + barsHtml + '</div>' +
+            '<div style="background:var(--ink);border:1px solid var(--paper-15);padding:16px;text-align:center">' +
+              '<div class="dossier-block-k" style="margin-bottom:8px">5-AXIS COMBAT RADAR</div>' +
+              buildRadarSvg(vLeft, vRight) +
+              '<div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-family:var(--font-label);font-weight:800;font-size:11px;letter-spacing:.16em">' +
+                '<span style="color:var(--acid)">■ ' + esc(vLeft.name.split(' ')[0].toUpperCase()) + '</span>' +
+                '<span style="color:var(--blood)">■ ' + esc(vRight.name.split(' ')[0].toUpperCase()) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="vs-verdict-banner">' +
+            '<div class="vs-verdict-text">RINGSIDE EDGE: <strong>' + esc(edgeHolder.name.toUpperCase()) + '</strong> (' + (diffPts > 0 ? '+' + fmtPts(diffPts) + ' PTS SPREAD' : 'DEAD EVEN ON POINTS · TIEBREAKER ACTIVE') + ')</div>' +
+            '<span class="vl-label" style="font-size:11px">WHALE CARD BREAKS ANY TIE</span>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="vs-fighter-col is-right" data-open-modal="' + esc(vRight.id) + '" style="cursor:pointer">' +
+          renderShot(vRight, { win: false }) +
+          '<div>' +
+            '<div class="vs-f-meta" style="color:var(--blood)">BLOOD CORNER · RANK #' + pad(vRight.rank) + ' · ' + esc(vRight.city) + '</div>' +
+            '<h3 class="vs-f-name">' + esc(vRight.name) + '</h3>' +
+          '</div>' +
+          '<div class="vs-f-move">"' + esc(vRight.signature_move || 'Classified') + '"</div>' +
+          '<div class="podium-stack" style="margin-top:4px">' + vRight.tools.map(function (t) { return '<span class="stack-pill"><i>' + esc(t) + '</i></span>'; }).join('') + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
   function getFilteredAndSortedVibers() {
     var q = state.search.toLowerCase().trim();
+    var tf = state.toolFilter.toLowerCase().trim();
     var list = state.vibers.filter(function (v) {
       if (state.filter === 'active' && v.isStandby) return false;
       if (state.filter === 'winners' && v.wins <= 0) return false;
       if (state.filter === 'peoples_choice' && v.peoples_choice <= 0) return false;
       if (state.filter === 'standby' && !v.isStandby) return false;
+      if (tf) {
+        var hasTool = v.tools.some(function (t) { return t.toLowerCase() === tf; });
+        if (!hasTool) return false;
+      }
       if (q) {
         var hay = [v.name, v.handle, v.city, v.builds_with, v.signature_move, v.known_for, v.favourite_build, v.id].join(' ').toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -534,6 +858,7 @@
       var isFirst = v.rank === 1;
       var isExpanded = !!state.expandedIds[v.id];
       var isChanged = !!state.changedIds[v.id];
+      var delta = state.rankDeltaMap[v.id] || 0;
       var pct = Math.max(2, Math.round((v.points / maxPts) * 100));
 
       var rowCls = 'lb-row' +
@@ -543,6 +868,10 @@
         (v.isStandby ? ' is-standby' : '') +
         (isExpanded ? ' is-expanded' : '') +
         (isChanged ? ' just-updated' : '');
+
+      var deltaHtml = '';
+      if (delta > 0) deltaHtml = '<span class="rank-delta up">▲' + delta + '</span>';
+      else if (delta < 0) deltaHtml = '<span class="rank-delta down">▼' + Math.abs(delta) + '</span>';
 
       var badges = '';
       if (v.wins > 0) badges += '<span class="mini-tag win-tag"><i>' + v.wins + 'W</i></span>';
@@ -555,7 +884,7 @@
 
       html +=
         '<tr class="' + rowCls + '" data-toggle-row="' + esc(v.id) + '">' +
-          '<td class="rank-cell">' + pad(v.rank) + '</td>' +
+          '<td class="rank-cell">' + pad(v.rank) + deltaHtml + '</td>' +
           '<td>' +
             '<div class="who-cell">' +
               renderShot(v, { round: true, decor: true, win: isFirst }) +
@@ -607,8 +936,9 @@
                   '<div class="dossier-block-k" style="margin-top:12px">PERFORMANCE TELEMETRY</div>' +
                   '<div class="dossier-block-v">Avg <strong>' + fmtPts(v.ppg) + ' pts/night</strong> · Best <strong>' + fmtPts(v.best_night) + '</strong> · Last <strong>' + fmtPts(v.last_night) + '</strong></div>' +
                 '</div>' +
-                '<div style="display:flex;align-items:center">' +
+                '<div style="display:flex;flex-direction:column;gap:8px;justify-content:center">' +
                   '<button type="button" class="hud-btn" data-open-modal="' + esc(v.id) + '"><span>FULL DOSSIER →</span></button>' +
+                  '<button type="button" class="hud-btn hud-btn-ghost" data-send-vs="' + esc(v.id) + '"><span>SEND TO VS ARENA ⚔</span></button>' +
                 '</div>' +
               '</div>' +
             '</td>' +
@@ -618,7 +948,6 @@
 
     tbody.innerHTML = html;
 
-    // Update sort headers UI
     document.querySelectorAll('table.pts-live thead th.sortable').forEach(function (th) {
       var key = th.getAttribute('data-sort');
       var arrow = th.querySelector('.sort-arrow');
@@ -698,8 +1027,12 @@
 
     body.innerHTML =
       '<div class="vl-modal-grid">' +
-        '<div class="vl-modal-visual">' +
-          renderShot(v, { win: v.rank === 1 }) +
+        '<div class="vl-modal-visual" style="display:flex;flex-direction:column">' +
+          '<div style="flex:1;min-height:220px;position:relative">' + renderShot(v, { win: v.rank === 1 }) + '</div>' +
+          '<div style="background:var(--ink);padding:14px;border-top:1px solid var(--paper-15);text-align:center">' +
+            '<div class="dossier-block-k" style="margin-bottom:4px">5-AXIS COMBAT PROFILE</div>' +
+            buildRadarSvg(v, null) +
+          '</div>' +
         '</div>' +
         '<div class="vl-modal-content">' +
           '<div>' +
@@ -752,6 +1085,8 @@
     renderTicker();
     renderKpis();
     renderPodium();
+    renderVersusArena();
+    renderStackCloud();
     renderTable();
     renderRosterCards();
     if (state.modalId && state.previousMap[state.modalId]) {
@@ -759,7 +1094,7 @@
     }
   }
 
-  // ---------- Ambient Hero Canvas (Sparks + Turning 60-Tick Clock Ring) ----------
+  // ---------- Ambient Hero Canvas ----------
   function initHeroCanvas() {
     var canvas = document.querySelector('.lb-hero-fx');
     if (!canvas) return;
@@ -776,7 +1111,7 @@
     resize();
     window.addEventListener('resize', resize);
 
-    for (var i = 0; i < 32; i++) {
+    for (var i = 0; i < 36; i++) {
       sparks.push({
         x: Math.random() * 1400,
         y: Math.random() * 500,
@@ -787,7 +1122,7 @@
       });
     }
 
-    function draw(t) {
+    function draw() {
       ctx.clearRect(0, 0, w, h);
       sparks.forEach(function (p) {
         p.x += p.vx;
@@ -795,7 +1130,7 @@
         if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
         if (p.x < 0) p.x = w;
         if (p.x > w) p.x = 0;
-        ctx.fillStyle = p.acid ? 'rgba(232,255,42,0.32)' : 'rgba(255,43,43,0.32)';
+        ctx.fillStyle = p.acid ? 'rgba(232,255,42,0.34)' : 'rgba(255,43,43,0.34)';
         ctx.fillRect(p.x, p.y, p.s, p.s);
       });
       requestAnimationFrame(draw);
@@ -805,7 +1140,6 @@
 
   // ---------- Event Bindings ----------
   function bindEvents() {
-    // Filter buttons
     document.querySelectorAll('[data-filter]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         document.querySelectorAll('[data-filter]').forEach(function (b) { b.classList.remove('active'); });
@@ -815,7 +1149,6 @@
       });
     });
 
-    // Search input
     var searchInput = document.getElementById('lb-search');
     if (searchInput) {
       searchInput.addEventListener('input', function (e) {
@@ -824,7 +1157,6 @@
       });
     }
 
-    // Table column sorting
     document.querySelectorAll('table.pts-live thead th.sortable').forEach(function (th) {
       th.addEventListener('click', function () {
         var key = th.getAttribute('data-sort');
@@ -838,7 +1170,6 @@
       });
     });
 
-    // Polling interval chips
     document.querySelectorAll('[data-poll-ms]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         document.querySelectorAll('[data-poll-ms]').forEach(function (c) { c.classList.remove('active'); });
@@ -851,11 +1182,10 @@
           pauseBtn.innerHTML = '<span>PAUSE</span>';
         }
         state.nextSyncAt = performance.now() + state.pollIntervalMs;
-        updateHudStatus('LIVE · FEED LOCKED', '');
+        updateHudStatus(state.isSimulating ? 'SIMULATION ACTIVE' : 'LIVE · FEED LOCKED', '');
       });
     });
 
-    // Force Sync Now button
     var syncNowBtn = document.getElementById('btn-sync-now');
     if (syncNowBtn) {
       syncNowBtn.addEventListener('click', function () {
@@ -863,7 +1193,6 @@
       });
     }
 
-    // Pause / Resume Polling button
     var pauseBtn = document.getElementById('btn-toggle-poll');
     if (pauseBtn) {
       pauseBtn.addEventListener('click', function () {
@@ -872,6 +1201,7 @@
           pauseBtn.classList.add('is-paused');
           pauseBtn.innerHTML = '<span>RESUME</span>';
           updateHudStatus('POLLING PAUSED', '');
+          pushFeedLog('HOLD', 'POLLING PAUSED BY OPERATOR', false);
         } else {
           pauseBtn.classList.remove('is-paused');
           pauseBtn.innerHTML = '<span>PAUSE</span>';
@@ -882,8 +1212,95 @@
       });
     }
 
-    // Delegated clicks for table row expand & modal triggers
+    // V2 Controls: Sound FX Toggle, Fight Night Simulator Toggle, TV Broadcast Mode
+    var soundBtn = document.getElementById('btn-sound-fx');
+    if (soundBtn) {
+      soundBtn.addEventListener('click', function () {
+        state.soundEnabled = !state.soundEnabled;
+        soundBtn.classList.toggle('is-active', state.soundEnabled);
+        soundBtn.innerHTML = '<span>' + (state.soundEnabled ? '🔔 BELL FX: ON' : '🔕 BELL FX: OFF') + '</span>';
+        if (state.soundEnabled) {
+          playRingsideBell();
+          showBellToast('RINGSIDE AUDIO ARMED', 'BELL CHIMES ON EVERY LIVE SCORECARD CALL');
+        }
+      });
+    }
+
+    var simBtn = document.getElementById('btn-sim-mode');
+    if (simBtn) {
+      simBtn.addEventListener('click', function () {
+        state.isSimulating = !state.isSimulating;
+        simBtn.classList.toggle('is-blood-active', state.isSimulating);
+        simBtn.innerHTML = '<span>' + (state.isSimulating ? '⚡ SIMULATING NIGHT (STOP)' : '⚡ SIMULATE FIGHT NIGHT') + '</span>';
+        if (state.isSimulating) {
+          updateHudStatus('SIMULATION OVERDRIVE', 'is-syncing');
+          pushFeedLog('SIM', 'FIGHT-NIGHT SIMULATOR ENGAGED · FIRING CALL', true);
+          simulateFightNightCall();
+        } else {
+          state.rankDeltaMap = {};
+          updateHudStatus('RESTORING G-SHEET...', 'is-syncing');
+          pushFeedLog('SYNC', 'SIMULATOR OFF · RESTORING OFFICIAL GOOGLE SHEET', false);
+          fetchSheetData();
+        }
+      });
+    }
+
+    var tvBtn = document.getElementById('btn-tv-mode');
+    if (tvBtn) {
+      tvBtn.addEventListener('click', function () {
+        state.tvMode = !state.tvMode;
+        document.body.classList.toggle('is-tv-mode', state.tvMode);
+        tvBtn.classList.toggle('is-active', state.tvMode);
+        if (state.tvMode && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(function () {});
+        } else if (!state.tvMode && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(function () {});
+        }
+      });
+    }
+
+    // Versus dropdowns
+    var selL = document.getElementById('vs-select-left');
+    var selR = document.getElementById('vs-select-right');
+    if (selL) {
+      selL.addEventListener('change', function (e) {
+        state.vsLeftId = e.target.value;
+        renderVersusArena();
+      });
+    }
+    if (selR) {
+      selR.addEventListener('change', function (e) {
+        state.vsRightId = e.target.value;
+        renderVersusArena();
+      });
+    }
+
+    // Delegated clicks
     document.addEventListener('click', function (e) {
+      var toolFilterBtn = e.target.closest('[data-tool-filter]');
+      if (toolFilterBtn) {
+        state.toolFilter = toolFilterBtn.getAttribute('data-tool-filter') || '';
+        renderStackCloud();
+        renderTable();
+        return;
+      }
+
+      var sendVsBtn = e.target.closest('[data-send-vs]');
+      if (sendVsBtn) {
+        e.stopPropagation();
+        var vid = sendVsBtn.getAttribute('data-send-vs');
+        if (state.vsLeftId === vid) {
+          state.vsRightId = vid;
+        } else {
+          state.vsRightId = state.vsLeftId;
+          state.vsLeftId = vid;
+        }
+        renderVersusArena();
+        var vsSec = document.getElementById('versus');
+        if (vsSec) vsSec.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
       var modalTrigger = e.target.closest('[data-open-modal]');
       if (modalTrigger) {
         e.stopPropagation();
@@ -913,9 +1330,9 @@
 
   // ---------- Boot ----------
   function init() {
-    // Paint immediately with fallback data so there is zero layout shift while first fetch resolves
     state.vibers = normalizeRows(FALLBACK_VIBERS);
     state.vibers.forEach(function (v) { state.previousMap[v.id] = v; });
+    pushFeedLog('BOOT', 'V2.0 TELEMETRY ENGINE INITIALIZED', false);
     renderAll();
 
     bindEvents();
