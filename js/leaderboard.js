@@ -1128,8 +1128,8 @@
 
       html +=
         '<tr class="' + rowCls + '" id="row-' + esc(v.id) + '" tabindex="0" role="button" aria-label="Open Viber Card for ' + esc(v.name) + '" data-viber-id="' + esc(v.id) + '" data-open-modal="' + esc(v.id) + '">' +
-          '<td class="rank-cell"><div class="rank-cell-inner"><span>' + pad(v.rank) + '</span>' + arrowHtml + '</div></td>' +
-          '<td>' +
+          '<td class="rank-cell td-rank" data-label="Rank"><div class="rank-cell-inner"><span>' + pad(v.rank) + '</span>' + arrowHtml + '</div></td>' +
+          '<td class="td-who" data-label="Viber">' +
             '<div class="who-cell">' +
               renderShot(v, { round: true, decor: true, win: isFirst }) +
               '<div class="who-info">' +
@@ -1140,22 +1140,23 @@
                 '</div>' +
                 '<div class="who-sub">' +
                   '<span class="who-city">' + esc(v.city) + '</span>' +
-                  (v.signature_move ? '<span>· "' + esc(v.signature_move) + '"</span>' : '') +
+                  (v.signature_move ? '<span class="who-move-inline">· "' + esc(v.signature_move) + '"</span>' : '') +
                 '</div>' +
               '</div>' +
             '</div>' +
           '</td>' +
-          '<td><div style="display:flex;gap:5px;flex-wrap:wrap">' + stackPills + '</div></td>' +
-          '<td class="num">' + v.episodes + '</td>' +
-          '<td class="num" style="color:' + (v.wins > 0 ? 'var(--acid);font-weight:700' : 'var(--paper-40)') + '">' + v.wins + '</td>' +
-          '<td class="num" style="color:' + (v.peoples_choice > 0 ? 'var(--blood);font-weight:700' : 'var(--paper-40)') + '">' + v.peoples_choice + '</td>' +
-          '<td class="center">' + (v.yellow_cards > 0 ? '<span class="yc-box" title="' + v.yellow_cards + ' Yellow Card (-1 pt)">' + v.yellow_cards + '</span>' : '<span class="yc-none">—</span>') + '</td>' +
-          '<td class="num">' + fmtPts(v.best_night) + ' <span style="color:var(--paper-40);font-size:12px">/ ' + fmtPts(v.last_night) + '</span></td>' +
-          '<td class="num">' +
+          '<td class="td-stack" data-label="Builds With"><div class="stack-cell-wrap">' + (stackPills || '<span class="num-dim">—</span>') + '</div></td>' +
+          '<td class="num td-nights" data-label="Nights"><span class="stat-num-val">' + v.episodes + '</span></td>' +
+          '<td class="num td-wins ' + (v.wins > 0 ? 'has-win' : 'is-zero') + '" data-label="Wins"><span class="stat-num-val">' + v.wins + '</span></td>' +
+          '<td class="num td-pc ' + (v.peoples_choice > 0 ? 'has-pc' : 'is-zero') + '" data-label="Crowd ★"><span class="stat-num-val">' + v.peoples_choice + '</span></td>' +
+          '<td class="center td-yc" data-label="Yellow Cards">' + (v.yellow_cards > 0 ? '<span class="yc-box" title="' + v.yellow_cards + ' Yellow Card (-1 pt)">' + v.yellow_cards + '</span>' : '<span class="yc-none">—</span>') + '</td>' +
+          '<td class="num td-best-last" data-label="Best / Last"><span class="best-val">' + fmtPts(v.best_night) + '</span> <span class="last-val">/ ' + fmtPts(v.last_night) + '</span></td>' +
+          '<td class="num td-pts" data-label="Points">' +
             '<div class="pts-cell-wrap">' +
               (ptDelta > 0 ? '<span class="pts-delta-pill"><i>+' + fmtPts(ptDelta) + ' PTS</i></span>' : '') +
               '<div class="pts-bar-outer"><div class="pts-bar-inner" style="width:' + (v.points > 0 ? pct : 0) + '%"></div></div>' +
               '<span class="pts-val">' + fmtPts(v.points) + '</span>' +
+              '<span class="row-card-cue" aria-hidden="true">CARD →</span>' +
             '</div>' +
           '</td>' +
         '</tr>';
@@ -1639,14 +1640,21 @@
     var tvBtn = document.getElementById('btn-tv-mode');
     if (tvBtn) {
       tvBtn.addEventListener('click', function () {
-        state.tvMode = !state.tvMode;
-        document.body.classList.toggle('is-tv-mode', state.tvMode);
-        tvBtn.classList.toggle('is-active', state.tvMode);
-        if (state.tvMode && document.documentElement.requestFullscreen) {
-          document.documentElement.requestFullscreen().catch(function () {});
-        } else if (!state.tvMode && document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen().catch(function () {});
-        }
+        setTvMode(!state.tvMode, { requestFullscreen: true });
+      });
+    }
+
+    var tvExitBtn = document.getElementById('btn-tv-exit');
+    if (tvExitBtn) {
+      tvExitBtn.addEventListener('click', function () {
+        setTvMode(false, { requestFullscreen: true });
+      });
+    }
+
+    var tvOvertakeBtn = document.getElementById('btn-tv-overtake');
+    if (tvOvertakeBtn) {
+      tvOvertakeBtn.addEventListener('click', function () {
+        runDaveTakesTheLeadChoreography();
       });
     }
 
@@ -1733,8 +1741,21 @@
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && state.modalId) {
-        closeFighterModal();
+      if (e.key === 'Escape') {
+        if (state.modalId) {
+          closeFighterModal();
+          return;
+        }
+        if (state.tvMode) {
+          setTvMode(false, { requestFullscreen: true });
+          return;
+        }
+      }
+      var activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
+      var isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+      if (!isTyping && (e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setTvMode(!state.tvMode, { requestFullscreen: true });
         return;
       }
       if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.hasAttribute('data-open-modal') && !state.modalId) {
@@ -1753,16 +1774,41 @@
     });
   }
 
+  function setTvMode(enabled, opts) {
+    opts = opts || {};
+    state.tvMode = !!enabled;
+    if (document.body) {
+      document.body.classList.toggle('is-tv-mode', state.tvMode);
+    }
+    var tvBtn = document.getElementById('btn-tv-mode');
+    if (tvBtn) {
+      tvBtn.classList.toggle('is-active', state.tvMode);
+      tvBtn.innerHTML = '<span>' + (state.tvMode ? '📺 TV MODE: ON [T]' : '📺 JUMBOTRON [T]') + '</span>';
+    }
+    if (opts.requestFullscreen) {
+      if (state.tvMode && document.documentElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(function () {});
+      } else if (!state.tvMode && document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(function () {});
+      }
+    }
+  }
+
   // ---------- Boot ----------
   function init() {
     var params = new URLSearchParams(window.location.search);
     var autoSimulateOvertake = params.get('simulate_ranking_change') === '1' || params.get('simulate_ranking_change') === 'true';
+    var autoTvMode = params.get('tv') === '1' || params.get('tv') === 'true' || params.get('jumbotron') === '1' || params.get('jumbotron') === 'true';
 
     state.rawSheetRows = FALLBACK_VIBERS;
     state.vibers = normalizeRows(FALLBACK_VIBERS);
     state.vibers.forEach(function (v) { state.previousMap[v.id] = v; });
-    pushFeedLog('BOOT', 'V4.2 TWIST CARD ENGINE INITIALIZED', false);
+    pushFeedLog('BOOT', 'V5.0 BROADCAST ENGINE INITIALIZED', false);
     renderAll();
+
+    if (autoTvMode) {
+      setTvMode(true, { requestFullscreen: false });
+    }
 
     // If URL already has a viber hash (#viber-dave-thomas or #v011), open their card immediately
     if (window.location.hash) {
@@ -1806,6 +1852,7 @@
     findViberByHash: findViberByHash,
     openFighterModal: openFighterModal,
     closeFighterModal: closeFighterModal,
+    setTvMode: setTvMode,
     applyNormalizedData: applyNormalizedData,
     runDaveTakesTheLeadChoreography: runDaveTakesTheLeadChoreography,
     getFilteredAndSortedVibers: getFilteredAndSortedVibers,

@@ -116,7 +116,10 @@ function createLeaderboardHarness(searchQuery = '', initialHash = '') {
     'btn-dave-overtake',
     'btn-sound-fx',
     'btn-sim-mode',
-    'btn-tv-mode'
+    'btn-tv-mode',
+    'tv-floating-bar',
+    'btn-tv-exit',
+    'btn-tv-overtake'
   ].forEach(id => makeEl(id));
 
   const bodyEl = makeEl('body', 'body');
@@ -441,4 +444,37 @@ test('QA 07 · Regression Guard: Card Click & Modal CSS Visibility Protection', 
   assert.match(podiumHtml, /data-open-modal="v011"/i, 'Podium card must carry data-open-modal="v011"');
   assert.match(dossiersHtml, /data-open-modal="v011"/i, 'Dossier card must carry data-open-modal="v011"');
 });
+
+test('QA 08 · V5 Readability, Mobile Fight-Card Layout & Jumbotron TV Mode Protection', () => {
+  // 1. Verify Readability & Mobile CSS rules exist in css/leaderboard.css
+  assert.match(cssSource, /--paper-readable:/i, 'V5 high-contrast readability token must be defined');
+  assert.match(cssSource, /grid-template-areas:\s*"rank who pts"/i, 'V5 zero-scroll mobile fight-card grid must be defined');
+  assert.match(cssSource, /body\.is-tv-mode\s+\.season-wrap/i, 'V5 16:9 Jumbotron split-stage TV layout must be defined');
+
+  // 2. Verify mobile data-label attributes & CARD -> cue in rendered standings rows
+  const { api, elementsById, bodyEl } = createLeaderboardHarness();
+  const tbodyHtml = elementsById['lb-tbody'].innerHTML;
+  assert.match(tbodyHtml, /data-label="Nights"/i);
+  assert.match(tbodyHtml, /data-label="Wins"/i);
+  assert.match(tbodyHtml, /data-label="Crowd ★"/i);
+  assert.match(tbodyHtml, /data-label="Yellow Cards"/i);
+  assert.match(tbodyHtml, /data-label="Best \/ Last"/i);
+  assert.match(tbodyHtml, /data-label="Points"/i);
+  assert.match(tbodyHtml, /class="row-card-cue"[^>]*>CARD →<\/span>/i);
+
+  // 3. Verify programmatic Jumbotron TV mode toggle
+  assert.equal(api.state.tvMode, false);
+  api.setTvMode(true);
+  assert.equal(api.state.tvMode, true);
+  assert.equal(bodyEl.classList.contains('is-tv-mode'), true, 'body.is-tv-mode must be active when TV mode is enabled');
+  api.setTvMode(false);
+  assert.equal(api.state.tvMode, false);
+  assert.equal(bodyEl.classList.contains('is-tv-mode'), false);
+
+  // 4. Verify ?tv=1 URL parameter auto-activates Jumbotron TV mode on boot
+  const tvBoot = createLeaderboardHarness('?tv=1');
+  assert.equal(tvBoot.api.state.tvMode, true, '?tv=1 must auto-enable TV mode on boot');
+  assert.equal(tvBoot.bodyEl.classList.contains('is-tv-mode'), true);
+});
+
 

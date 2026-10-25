@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vibers League · V4.2 Kinetic Leaderboard &amp; Fight-Night Telemetry</title>
-<meta name="description" content="V4.2 Live leaderboard with FLIP position-swap animations, directional rank arrows, championship coronation overlays, Tale of the Tape, and Google Sheets polling telemetry.">
+<title>Vibers League · V5.0 Live Leaderboard, Mobile &amp; Jumbotron Broadcast</title>
+<meta name="description" content="V5.0 High-contrast ringside leaderboard with mobile fight-card rows, 16:9 Jumbotron TV broadcast layout, Twist Card 01 dossiers, FLIP position-swap animations, and Google Sheets polling telemetry.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Vibers League">
-<meta property="og:title" content="Vibers League · V4.2 Official Live Leaderboard">
+<meta property="og:title" content="Vibers League · V5.0 Official Live Leaderboard">
 <meta property="og:description" content="4 vibers get a real business owner's problem and 60 minutes to solve it with AI. Live season standings, kinetic rank-shift animations, Tale of the Tape, and fighter dossiers.">
 <meta property="og:image" content="assets/og-card-v2.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -20,9 +20,9 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/barlow-condensed-800-italic-latin-v1.woff2">
 
 <!-- Vibers League Design System Tokens & Leaderboard Styles -->
-<link rel="stylesheet" href="css/styles.css?v=4.2.0">
-<link rel="stylesheet" href="css/site.css?v=4.2.0">
-<link rel="stylesheet" href="css/leaderboard.css?v=4.2.0">
+<link rel="stylesheet" href="css/styles.css?v=5.0.0">
+<link rel="stylesheet" href="css/site.css?v=5.0.0">
+<link rel="stylesheet" href="css/leaderboard.css?v=5.0.0">
 </head>
 <body>
 
@@ -31,16 +31,16 @@
   <div class="ticker-bar">
     <div class="ticker-progress"></div>
     <div class="ticker-inner" id="live-ticker-content">
-      V4.2 LIVE KINETIC FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
+      V5.0 LIVE KINETIC FEED &nbsp;&nbsp;★&nbsp;&nbsp; VIBERS LEAGUE SEASON 01 &nbsp;&nbsp;★&nbsp;&nbsp; 60:00 ON THE CLOCK &nbsp;&nbsp;★&nbsp;&nbsp; VANCOUVER, BC &nbsp;&nbsp;★&nbsp;&nbsp;
     </div>
   </div>
 </div>
 
-<!-- Official Vibers League Top Navigation + V4 Twist Card Controls -->
+<!-- Official Vibers League Top Navigation + V5 Broadcast & Twist Card Controls -->
 <header class="topbar">
   <a class="brand" href="https://www.vibersleague.com/" aria-label="Vibers League Home">
     <span data-mark data-drain></span> VIBERS LEAGUE
-    <span class="v2-badge" title="V4.2 Twist Card Edition — The Viber Card"><span>V4.2 · TWIST</span></span>
+    <span class="v2-badge" title="V5.0 High-Contrast Readability, Mobile &amp; Jumbotron TV Edition"><span>V5.0 · LIVE</span></span>
   </a>
   <nav class="navlinks site-nav" aria-label="Primary Navigation">
     <a href="#podium">Podium</a>
@@ -61,8 +61,8 @@
     <button type="button" class="v2-ctl-btn" id="btn-sim-mode" title="Simulate continuous random ringside scorecard calls">
       <span>⚡ RANDOM SIM</span>
     </button>
-    <button type="button" class="v2-ctl-btn" id="btn-tv-mode" title="Toggle Fullscreen Jumbotron TV Mode">
-      <span>📺 JUMBOTRON</span>
+    <button type="button" class="v2-ctl-btn" id="btn-tv-mode" title="Toggle Fullscreen Jumbotron TV Mode (Shortcut: T or ?tv=1)">
+      <span>📺 JUMBOTRON [T]</span>
     </button>
   </div>
 </header>
@@ -75,7 +75,7 @@
   <div class="lb-hero-grid">
     <div class="lb-hero-copy">
       <div class="lb-kicker-row">
-        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED · V3.0</span></span>
+        <span class="lb-live-badge"><span><i class="dot"></i> LIVE RINGSIDE FEED · V5.0</span></span>
         <span class="vl-kicker">SEASON 01 · VANCOUVER, BC</span>
       </div>
       <h1>
@@ -333,16 +333,23 @@
   </div>
 </div>
 
+<!-- V5 Floating Jumbotron Broadcast Bar (Visible in TV / Jumbotron Mode) -->
+<div class="tv-floating-bar" id="tv-floating-bar" aria-label="Jumbotron Broadcast Controls">
+  <span class="tv-live-indicator"><i class="dot"></i> JUMBOTRON ARENA FEED · V5.0</span>
+  <button type="button" class="tv-action-btn" id="btn-tv-overtake"><span>👑 PLAY OVERTAKE</span></button>
+  <button type="button" class="tv-action-btn is-exit" id="btn-tv-exit"><span>✕ EXIT TV [T]</span></button>
+</div>
+
 <!-- Official Vibers League Footer -->
 <footer class="site-foot">
   <div class="shell">
     <div class="foot-row">
       <div class="foot-brand">
-        <div class="brand"><span data-mark></span> VIBERS LEAGUE <span class="v2-badge" style="font-size:11px;padding:2px 7px;margin-left:6px"><span>V3.0</span></span></div>
+        <div class="brand"><span data-mark></span> VIBERS LEAGUE <span class="v2-badge" style="font-size:11px;padding:2px 7px;margin-left:6px"><span>V5.0</span></span></div>
         <div class="foot-tag">The competitive league for AI creators</div>
       </div>
       <div class="vl-meta">
-        V3.0 KINETIC LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
+        V5.0 BROADCAST LEADERBOARD TELEMETRY &middot; FILMED IN VANCOUVER, BC<br>
         &copy; 2026 VIBERS LEAGUE &middot; BUILT LIVE ON THE CLOCK
         <div class="foot-links">
           <a href="https://www.vibersleague.com/">Home</a>
@@ -357,7 +364,7 @@
   </div>
 </footer>
 
-<script src="js/kit.js?v=4.2.0"></script>
-<script src="js/leaderboard.js?v=4.2.0"></script>
+<script src="js/kit.js?v=5.0.0"></script>
+<script src="js/leaderboard.js?v=5.0.0"></script>
 </body>
 </html>

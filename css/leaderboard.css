@@ -2662,5 +2662,696 @@ table.pts-live tbody tr.lb-row:hover .who-name {
   }
 }
 
+/* ==========================================================================
+   V5.0 EDITION — RINGSIDE READABILITY, ZERO-SCROLL MOBILE FIGHT-CARD ROWS
+   & 16:9 JUMBOTRON TV BROADCAST LAYOUT
+   ========================================================================== */
+
+:root {
+  --paper-readable: rgba(243, 239, 230, 0.88);
+  --paper-sub-readable: rgba(243, 239, 230, 0.74);
+  --paper-muted-readable: rgba(243, 239, 230, 0.56);
+}
+
+/* ---------- 1. Readability Pass: Higher Contrast & Clearer Hierarchy ---------- */
+.lb-hero-sub {
+  font-size: clamp(16px, 1.35vw, 19px);
+  line-height: 1.6;
+  color: var(--paper-readable);
+}
+
+/* Telemetry HUD & KPI Readability */
+.hud-stat-k,
+.p-stat-k {
+  font-size: 11.5px;
+  color: var(--paper-sub-readable);
+  letter-spacing: .18em;
+}
+.kpi-label {
+  font-size: 13px;
+  color: var(--paper-readable);
+}
+.kpi-sub {
+  font-size: 12px;
+  color: var(--paper-sub-readable);
+}
+
+/* Podium Readability */
+.podium-handle {
+  font-size: 14px;
+  color: var(--paper-sub-readable);
+}
+.podium-move {
+  font-size: 16px;
+  line-height: 1.52;
+  color: var(--paper);
+}
+.podium-known {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--paper-readable);
+}
+.stack-pill {
+  font-size: 12px;
+  padding: 4px 10px;
+  color: var(--paper-readable);
+  border-color: var(--paper-40);
+}
+
+/* Standings Table Readability & Semantic Stat Cells */
+table.pts-live thead th {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  font-size: 13px;
+  letter-spacing: .18em;
+  color: var(--paper);
+  padding: 16px 16px;
+  box-shadow: 0 2px 0 var(--acid);
+}
+table.pts-live tbody tr.lb-row:nth-child(even) {
+  background: rgba(26, 25, 22, 0.48);
+}
+table.pts-live tbody tr.lb-row:hover {
+  background: var(--steel);
+  outline: 1px solid rgba(232, 255, 42, 0.45);
+  outline-offset: -1px;
+}
+table.pts-live tbody tr.lb-row.is-standby {
+  opacity: 0.85;
+}
+
+/* Solid, high-legibility Rank Numbers for all rows (no faint hollow outlines) */
+table.pts-live td.rank-cell {
+  font-size: 32px;
+  color: var(--paper-sub-readable);
+  -webkit-text-stroke: 0;
+  width: 84px;
+}
+table.pts-live tr.first td.rank-cell {
+  color: var(--acid);
+  text-shadow: 3px 3px 0 var(--blood);
+}
+table.pts-live tr.rank-2 td.rank-cell,
+table.pts-live tr.rank-3 td.rank-cell {
+  color: var(--paper);
+}
+
+/* Fighter Identity Cell Readability */
+.who-name {
+  font-size: 23px;
+  letter-spacing: .03em;
+}
+.who-handle {
+  font-size: 13px;
+  color: var(--paper-sub-readable);
+}
+.who-sub {
+  font-size: 14px;
+  color: var(--paper-readable);
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+.who-city {
+  font-size: 12px;
+  background: rgba(255, 43, 43, 0.14);
+  border-left: 2px solid var(--blood);
+  padding: 1px 7px;
+  color: var(--paper);
+}
+.who-move-inline {
+  color: var(--paper-sub-readable);
+}
+
+/* Semantic Stat Columns in Table */
+.stack-cell-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.stat-num-val {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: .02em;
+  color: var(--paper);
+}
+table.pts-live td.td-wins.has-win .stat-num-val {
+  color: var(--acid);
+}
+table.pts-live td.td-pc.has-pc .stat-num-val {
+  color: var(--blood);
+}
+table.pts-live td.td-wins.is-zero .stat-num-val,
+table.pts-live td.td-pc.is-zero .stat-num-val,
+.num-dim {
+  color: var(--paper-muted-readable);
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 16px;
+}
+.best-val {
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--paper);
+}
+.last-val {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--paper-sub-readable);
+  margin-left: 2px;
+}
+.pts-val {
+  font-size: 32px;
+  min-width: 42px;
+}
+.row-card-cue {
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: var(--acid);
+  border: 1px solid rgba(232, 255, 42, 0.45);
+  background: rgba(11, 10, 8, 0.75);
+  padding: 3px 8px;
+  transform: skewX(var(--skew));
+  opacity: 0.78;
+  transition: all var(--t-micro);
+  white-space: nowrap;
+}
+table.pts-live tbody tr.lb-row:hover .row-card-cue {
+  opacity: 1;
+  background: var(--acid);
+  color: var(--ink);
+  border-color: var(--acid);
+  box-shadow: 2px 2px 0 var(--blood);
+}
+
+/* Twist Card 01 (The Viber Card) Readability Boost */
+.vc-field-k {
+  font-size: 12px;
+  letter-spacing: .2em;
+}
+.vc-field-v {
+  font-size: 16.5px;
+  line-height: 1.55;
+  color: var(--paper);
+}
+.vc-field-v.is-quote {
+  font-size: 24px;
+  line-height: 1.08;
+}
+.vc-stat-k {
+  font-size: 12px;
+  color: var(--paper-readable);
+}
+.vc-stat-v {
+  font-size: clamp(28px, 3.2vw, 40px);
+}
+
+/* ---------- 2. Mobile Layout Pass (Zero-Horizontal-Scroll Fight-Card Rows) ---------- */
+@media (max-width: 768px) {
+  /* Compact 2-Deck Mobile Topbar with Swipeable Controls */
+  .topbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .topbar .brand {
+    justify-content: space-between;
+    width: 100%;
+    font-size: 20px;
+  }
+  .topbar .navlinks.site-nav {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 14px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-top: 1px solid var(--paper-15);
+    padding-top: 8px;
+  }
+  .topbar .navlinks.site-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .topbar-right {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 8px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .topbar-right::-webkit-scrollbar {
+    display: none;
+  }
+  .v2-ctl-btn {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 12px;
+    transform: none;
+  }
+  .v2-ctl-btn > span {
+    transform: none;
+  }
+
+  /* Hero & Telemetry HUD on Mobile */
+  .lb-hero {
+    padding: 28px 16px 34px;
+  }
+  .lb-hero h1 {
+    font-size: clamp(46px, 13vw, 72px);
+  }
+  .telemetry-hud {
+    padding: 20px 16px;
+  }
+  .hud-meta-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .hud-stat-v {
+    font-size: 18px;
+  }
+  .hud-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hud-intervals {
+    justify-content: space-between;
+  }
+  .hud-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .hud-btn {
+    text-align: center;
+    padding: 10px 12px;
+  }
+
+  /* Filter Toolbar & AI Stack Bar on Mobile */
+  .lb-toolbar {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .lb-filters {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    gap: 8px;
+    width: 100%;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .lb-filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-btn {
+    flex: 0 0 auto;
+    transform: none;
+    padding: 8px 14px;
+  }
+  .filter-btn > span {
+    transform: none;
+  }
+  .lb-search-wrap {
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .stack-cloud-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    padding: 10px 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .stack-cloud-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .stack-filter-pill {
+    flex: 0 0 auto;
+    transform: none;
+  }
+  .stack-filter-pill > i {
+    transform: none;
+  }
+
+  /* ZERO-HORIZONTAL-SCROLL MOBILE FIGHT-CARD TABLE ROWS */
+  .lb-table-wrap {
+    overflow-x: visible;
+    border: none;
+    background: transparent;
+  }
+  table.pts-live {
+    min-width: 0;
+    width: 100%;
+    display: block;
+  }
+  table.pts-live thead {
+    display: none;
+  }
+  table.pts-live tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  table.pts-live tbody tr.lb-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "rank who pts"
+      "stack stack stack"
+      "nights wins pc"
+      "yc bestlast bestlast";
+    gap: 10px 12px;
+    padding: 16px 14px;
+    background: var(--steel);
+    border: 1px solid var(--paper-15);
+    border-left: 4px solid var(--paper-40);
+    align-items: center;
+  }
+  table.pts-live tbody tr.lb-row.first {
+    border: 2px solid var(--acid);
+    border-left: 6px solid var(--acid);
+    background: linear-gradient(180deg, rgba(232, 255, 42, 0.08) 0%, var(--steel) 100%);
+  }
+  table.pts-live tbody tr.lb-row.rank-2,
+  table.pts-live tbody tr.lb-row.rank-3 {
+    border-left: 5px solid var(--paper);
+  }
+  table.pts-live td {
+    padding: 0;
+    border: none;
+  }
+  table.pts-live td.td-rank {
+    grid-area: rank;
+    width: auto;
+    font-size: 28px;
+    padding-right: 4px;
+  }
+  table.pts-live td.td-who {
+    grid-area: who;
+    min-width: 0;
+  }
+  table.pts-live td.td-pts {
+    grid-area: pts;
+    text-align: right;
+  }
+  .pts-cell-wrap {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .pts-bar-outer {
+    display: none;
+  }
+  .pts-val {
+    font-size: 34px;
+  }
+  .pts-val::after {
+    content: " PTS";
+    font-family: var(--font-label);
+    font-weight: 800;
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: var(--paper-sub-readable);
+    display: block;
+    margin-top: -2px;
+  }
+  table.pts-live td.td-stack {
+    grid-area: stack;
+    padding-top: 8px;
+    border-top: 1px solid var(--paper-10);
+  }
+  table.pts-live td.td-nights { grid-area: nights; }
+  table.pts-live td.td-wins   { grid-area: wins; }
+  table.pts-live td.td-pc     { grid-area: pc; }
+  table.pts-live td.td-yc     { grid-area: yc; }
+  table.pts-live td.td-best-last { grid-area: bestlast; }
+
+  table.pts-live td.td-nights,
+  table.pts-live td.td-wins,
+  table.pts-live td.td-pc,
+  table.pts-live td.td-yc,
+  table.pts-live td.td-best-last {
+    background: var(--ink);
+    padding: 7px 10px;
+    text-align: left !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 2px solid var(--paper-15);
+  }
+  table.pts-live td.td-nights::before,
+  table.pts-live td.td-wins::before,
+  table.pts-live td.td-pc::before,
+  table.pts-live td.td-yc::before,
+  table.pts-live td.td-best-last::before {
+    content: attr(data-label);
+    font-family: var(--font-label);
+    font-weight: 800;
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: var(--paper-sub-readable);
+    text-transform: uppercase;
+  }
+
+  /* Mobile Viber Card Modal Ergonomics */
+  .viber-card-backdrop {
+    padding: 8px;
+    align-items: flex-start;
+  }
+  .vc-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    padding: 12px 14px;
+  }
+  .vc-address-pill {
+    display: none;
+  }
+  .vc-info-col {
+    padding: 20px 18px;
+  }
+  .vc-full-line-wrap {
+    padding: 16px 18px 20px;
+  }
+  .vc-footer-nav {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ---------- 3. TV / Jumbotron 16:9 Arena Broadcast Layout Pass ---------- */
+.tv-floating-bar {
+  position: fixed;
+  bottom: 22px;
+  left: 24px;
+  z-index: 320;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: rgba(11, 10, 8, 0.94);
+  border: 2px solid var(--acid);
+  box-shadow: 6px 6px 0 var(--blood);
+  padding: 10px 16px;
+  backdrop-filter: blur(8px);
+}
+body.is-tv-mode .tv-floating-bar {
+  display: inline-flex;
+}
+.tv-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: .18em;
+  color: var(--acid);
+  text-transform: uppercase;
+}
+.tv-live-indicator .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blood);
+  box-shadow: 0 0 10px var(--blood);
+  animation: vl-pulse 1s infinite;
+}
+.tv-action-btn {
+  background: var(--steel);
+  color: var(--paper);
+  border: 1px solid var(--acid);
+  font-family: var(--font-label);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.tv-action-btn:hover {
+  background: var(--acid);
+  color: var(--ink);
+}
+.tv-action-btn.is-exit {
+  background: var(--blood);
+  border-color: var(--blood);
+  color: var(--paper);
+}
+.tv-action-btn.is-exit:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* In TV / Jumbotron Mode: Transform Page into a Focused 16:9 Split Broadcast Screen */
+body.is-tv-mode .lb-hero,
+body.is-tv-mode #versus,
+body.is-tv-mode #scoring,
+body.is-tv-mode #dossiers,
+body.is-tv-mode .lb-toolbar,
+body.is-tv-mode .stack-cloud-bar,
+body.is-tv-mode .fine-note,
+body.is-tv-mode footer.site-foot {
+  display: none !important;
+}
+
+body.is-tv-mode .topbar {
+  padding: 10px 28px;
+  border-bottom: 2px solid var(--acid);
+}
+body.is-tv-mode .kpi-strip {
+  max-width: 100%;
+  border-bottom: 2px solid var(--line);
+}
+body.is-tv-mode .kpi-cell {
+  padding: 14px 22px;
+}
+body.is-tv-mode .kpi-val {
+  font-size: clamp(28px, 2.6vw, 42px);
+}
+
+@media (min-width: 1100px) {
+  body.is-tv-mode main.shell {
+    max-width: 100%;
+    padding: 18px 28px 80px;
+  }
+  body.is-tv-mode .season-wrap {
+    display: grid;
+    grid-template-columns: minmax(340px, 31%) 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  body.is-tv-mode #podium,
+  body.is-tv-mode #standings {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+  body.is-tv-mode .season-head {
+    margin-bottom: 14px;
+  }
+  body.is-tv-mode .season-head h2 {
+    font-size: clamp(28px, 2.4vw, 40px);
+  }
+
+  /* Stack Top 3 Podium Cards Vertically on Left of Jumbotron */
+  body.is-tv-mode .podium-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  body.is-tv-mode .podium-card {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: stretch;
+  }
+  body.is-tv-mode .podium-visual {
+    aspect-ratio: auto;
+    min-height: 155px;
+  }
+  body.is-tv-mode .podium-rank-num {
+    font-size: 54px;
+    top: -4px;
+    right: 8px;
+  }
+  body.is-tv-mode .podium-pts-big {
+    font-size: 34px;
+  }
+  body.is-tv-mode .podium-body {
+    padding: 14px 16px;
+  }
+  body.is-tv-mode .podium-name {
+    font-size: 26px;
+  }
+  body.is-tv-mode .podium-known,
+  body.is-tv-mode .podium-stack {
+    display: none;
+  }
+  body.is-tv-mode .podium-stats-row {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  /* Oversized Distance-Readable Standings Table on Right of Jumbotron */
+  body.is-tv-mode table.pts-live thead th {
+    font-size: 14px;
+    padding: 14px 18px;
+  }
+  body.is-tv-mode table.pts-live td {
+    padding: 13px 18px;
+  }
+  body.is-tv-mode table.pts-live td.rank-cell {
+    font-size: 36px;
+  }
+  body.is-tv-mode .who-name {
+    font-size: 26px;
+  }
+  body.is-tv-mode .who-sub {
+    font-size: 14.5px;
+  }
+  body.is-tv-mode .stat-num-val {
+    font-size: 25px;
+  }
+  body.is-tv-mode .pts-val {
+    font-size: 38px;
+  }
+  body.is-tv-mode .stack-pill {
+    font-size: 13px;
+    padding: 4px 11px;
+  }
+}
+
+/* Ultra-Wide 1080p / 4K Broadcast Scaling */
+@media (min-width: 1700px) {
+  .lb-hero-grid,
+  .kpi-strip,
+  main.shell {
+    max-width: 1720px;
+  }
+  table.pts-live td {
+    padding: 17px 20px;
+  }
+  .who-name {
+    font-size: 25px;
+  }
+  .pts-val {
+    font-size: 34px;
+  }
+}
+
+
 
 
