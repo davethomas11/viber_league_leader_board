@@ -1761,7 +1761,7 @@
     state.rawSheetRows = FALLBACK_VIBERS;
     state.vibers = normalizeRows(FALLBACK_VIBERS);
     state.vibers.forEach(function (v) { state.previousMap[v.id] = v; });
-    pushFeedLog('BOOT', 'V4.0 TWIST CARD ENGINE INITIALIZED', false);
+    pushFeedLog('BOOT', 'V4.2 TWIST CARD ENGINE INITIALIZED', false);
     renderAll();
 
     // If URL already has a viber hash (#viber-dave-thomas or #v011), open their card immediately
@@ -1781,6 +1781,39 @@
       }
     });
     startPollingLoop();
+  }
+
+  // Expose internal API for Unit & QA Testing Suites (Node.js & Browser)
+  window.VL_LEADERBOARD = {
+    SHEET_ID: SHEET_ID,
+    GVIZ_JSON_URL: GVIZ_JSON_URL,
+    GVIZ_CSV_URL: GVIZ_CSV_URL,
+    FALLBACK_VIBERS: FALLBACK_VIBERS,
+    state: state,
+    esc: esc,
+    pad: pad,
+    num: num,
+    fmtPts: fmtPts,
+    initials: initials,
+    resolvePhotoUrl: resolvePhotoUrl,
+    renderShot: renderShot,
+    buildRadarSvg: buildRadarSvg,
+    compareOfficialRank: compareOfficialRank,
+    normalizeRows: normalizeRows,
+    parseGvizJson: parseGvizJson,
+    parseCsv: parseCsv,
+    viberSlug: viberSlug,
+    findViberByHash: findViberByHash,
+    openFighterModal: openFighterModal,
+    closeFighterModal: closeFighterModal,
+    applyNormalizedData: applyNormalizedData,
+    runDaveTakesTheLeadChoreography: runDaveTakesTheLeadChoreography,
+    getFilteredAndSortedVibers: getFilteredAndSortedVibers,
+    renderAll: renderAll
+  };
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.VL_LEADERBOARD;
   }
 
   if (document.readyState === 'loading') {
