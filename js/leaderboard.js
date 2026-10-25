@@ -1288,9 +1288,12 @@
 
   function openFighterModal(id, opts) {
     opts = opts || {};
-    var v = state.previousMap[id];
+    var cleanId = String(id || '').trim();
+    var v = state.previousMap[cleanId] || state.vibers.filter(function (x) {
+      return x.id === cleanId || x.id.toLowerCase() === cleanId.toLowerCase();
+    })[0];
     if (!v) return;
-    state.modalId = id;
+    state.modalId = v.id;
     if (opts.triggerEl) {
       state.lastTriggerEl = opts.triggerEl;
     }
@@ -1720,8 +1723,7 @@
       var rowTrigger = e.target.closest('[data-toggle-row]');
       if (rowTrigger) {
         var id = rowTrigger.getAttribute('data-toggle-row');
-        state.expandedIds[id] = !state.expandedIds[id];
-        renderTable();
+        openFighterModal(id, { triggerEl: rowTrigger });
         return;
       }
 
